@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — SignPal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <%- include('partials/nav') %>
+
+  <main class="admin-main">
+    <div class="admin-container">
+
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">Order Management</h1>
+          <p class="admin-subtitle">Review incoming orders and respond to customers.</p>
+        </div>
+        <div class="admin-actions">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="pending">Pending</button>
+            <button class="filter-tab" data-filter="in_progress">In Progress</button>
+            <button class="filter-tab" data-filter="completed">Completed</button>
+          </div>
+          <span id="order-count" class="order-count">Loading...</span>
+        </div>
+      </div>
+
+      <div id="orders-list" class="orders-list">
+        <div class="loading-state">Loading orders...</div>
+      </div>
+
+      <!-- Order Detail Modal -->
+      <div id="modal-overlay" class="modal-overlay" hidden>
+        <div class="modal">
+          <div class="modal-header">
+            <h2 class="modal-title">Order #<span id="modal-order-id"></span></h2>
+            <button class="modal-close" onclick="closeModal()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="modal-designs" id="modal-designs"></div>
+
+            <div class="modal-info-grid">
+              <div class="info-card">
+                <span class="info-label">Customer</span>
+                <span class="info-value" id="modal-customer-name"></span>
+                <span class="info-sub" id="modal-customer-email"></span>
+                <span class="info-sub" id="modal-customer-phone"></span>
+              </div>
+              <div class="info-card" id="modal-description-card">
+                <span class="info-label">Design Request</span>
+                <span class="info-value" id="modal-description"></span>
+              </div>
+              <div class="info-card">
+                <span class="info-label">Submitted</span>
+                <span class="info-value" id="modal-created"></span>
+              </div>
+            </div>
+
+            <div class="modal-notes" id="modal-notes-section" hidden>
+              <span class="info-label">Notes</span>
+              <p id="modal-notes-text"></p>
+            </div>
+
+            <!-- Print-Ready Production Assets -->
+            <div class="modal-print-assets" id="modal-print-assets-section">
+              <span class="info-label">Print-Ready Production Assets</span>
+              <div class="print-assets-grid">
+                <!-- Mockup Selection -->
+                <div class="print-asset-card" id="asset-mockup-card">
+                  <div class="asset-preview-wrap">
+                    <img id="print-mockup-preview" src="" alt="Selected Mockup">
+                  </div>
+                  <div class="asset-details">
+                    <div class="asset-name">1. Customer Mockup</div>
+                    <div class="asset-desc">Original 3D visualization mockup selected by customer.</div>
+                    <a id="download-mockup-btn" href="" target="_blank" download class="btn-download">Download Mockup</a>
+                  </div>
+                </div>
+
+                <!-- Flat Artwork -->
+                <div class="print-asset-card" id="asset-flat-card">
+                  <div class="asset-preview-wrap">
+                    <img id="print-flat-preview" src="" alt="Flat Artwork">
+                    <div id="flat-loading" class="asset-loading-overlay">
+                      <svg class="spinner" viewBox="0 0 24 24" width="24" height="24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70" stroke-linecap="round"/>
+                      </svg>
+                      Generating flat design...
+                    </div>
+                  </div>
+                  <div class="asset-details">
+                    <div class="asset-name">2. Flat Artwork Layout</div>
+                    <div class="asset-desc">Front-facing layout on solid background. Optimized for printing.</div>
+                    <a id="download-flat-btn" href="" target="_blank" download class="btn-download">Download Flat</a>
+                  </div>
+                </div>
+
+                <!-- Upscaled Design -->
+                <div class="print-asset-card" id="asset-upscaled-card">
+                  <div class="asset-preview-wrap">
+                    <img id="print-upscaled-preview" src="" alt="Upscaled Design">
+                    <div id="upscaled-loading" class="asset-loading-overlay">
+                      <svg class="spinner" viewBox="0 0 24 24" width="24" height="24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70" stroke-linecap="round"/>
+                      </svg>
+                      Upscaling design...
+                    </div>
+                  </div>
+                  <div class="asset-details">
+                    <div class="asset-name">3. High-Res Print-Ready</div>
+                    <div class="asset-desc">Super-resolution upscaled flat design (4x size) for physical print.</div>
+                    <a id="download-upscaled-btn" href="" target="_blank" download class="btn-download">Download High-Res</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-response-section">
+              <label class="info-label" for="admin-response">Your Response</label>
+              <textarea id="admin-response" rows="4" placeholder="Hi Ali, great choice! Here's the pricing and timeline..."></textarea>
+            </div>
+
+            <div class="modal-status-row">
+              <label class="info-label">Status</label>
+              <div class="status-select">
+                <button class="status-btn" data-status="pending">Pending</button>
+                <button class="status-btn" data-status="in_progress">In Progress</button>
+                <button class="status-btn" data-status="completed">Completed</button>
+                <button class="status-btn status-rejected" data-status="rejected">Rejected</button>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button class="btn-save" id="btn-save-response">Save & Update Status</button>
+              <span id="modal-save-status" class="save-status"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const STATUS_LABELS = {
+      pending: 'Pending',
+      in_progress: 'In Progress',
+      completed: 'Completed',
+      rejected: 'Rejected',
+    };
+
+    let allOrders = [];
+    let currentFilter = 'all';
+    let currentModalId = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/admin/orders');
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+        allOrders = data.orders;
+        renderOrders();
+      } catch (err) {
+        $('orders-list').innerHTML = '<div class="error-state">Failed to load orders. Refresh to try again.</div>';
+      }
+    }
+
+    function renderOrders() {
+      const list = $('orders-list');
+
+      const filtered = currentFilter === 'all'
+        ? allOrders
+        : allOrders.filter(o => o.status === currentFilter);
+
+      $('order-count').textContent = `${filtered.length} order${filtered.length !== 1 ? 's' : ''}`;
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><br>No orders yet — waiting for customers to submit designs.<br><span style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:inline-block">Share your design tool link to get started.</span></div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(o => {
+        const designs = o.designs_json ? JSON.parse(o.designs_json) : [];
+        const selectedDesign = designs[o.selected_design];
+        const date = new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        return `
+          <div class="order-card" onclick="openModal(${o.id})">
+            <div class="order-design">
+              ${selectedDesign
+                ? `<img src="${selectedDesign.url}" alt="Selected design">`
+                : '<div class="no-design">No design</div>'
+              }
+            </div>
+            <div class="order-info">
+              <div class="order-name">${escHtml(o.customer_name)}</div>
+              <div class="order-sign-text">${escHtml(o.user_description ? o.user_description.slice(0,60) + (o.user_description.length > 60 ? '…' : '') : '—')}</div>
+              <div class="order-meta">
+                <span class="order-date">${date}</span>
+              </div>
+            </div>
+            <div class="order-status-col">
+              <span class="order-status-badge status-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>
+            </div>
+            <div class="order-email-col">
+              <a href="mailto:${escHtml(o.customer_email)}" class="order-email" onclick="event.stopPropagation()">${escHtml(o.customer_email)}</a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str || '';
+      return d.innerHTML;
+    }
+
+    function openModal(id) {
+      currentModalId = id;
+      const o = allOrders.find(x => x.id === id);
+      if (!o) return;
+
+      const designs = o.designs_json ? JSON.parse(o.designs_json) : [];
+
+      $('modal-order-id').textContent = id;
+      $('modal-customer-name').textContent = o.customer_name || '—';
+      $('modal-customer-email').textContent = o.customer_email || '—';
+      $('modal-customer-phone').textContent = o.customer_phone || '';
+      $('modal-description').textContent = o.user_description || '—';
+      $('modal-created').textContent = new Date(o.created_at).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+
+      $('modal-notes-text').textContent = o.notes || '';
+      $('modal-notes-section').hidden = !o.notes;
+
+      // Design thumbnails
+      if (designs.length > 0) {
+        $('modal-designs').innerHTML = `
+          <div class="modal-designs-label">Generated designs (design #${(o.selected_design || 0) + 1} selected)</div>
+          <div class="modal-design-grid">
+            ${designs.map((d, i) => `
+              <div class="modal-design-thumb ${i === o.selected_design ? 'selected' : ''}">
+                <img src="${d.url}" alt="Design ${i + 1}">
+                ${i === o.selected_design ? '<div class="thumb-selected-badge">Selected</div>' : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        $('modal-designs').innerHTML = '';
+      }
+
+      // Populate print assets section
+      const selectedDesign = designs[o.selected_design];
+      if (selectedDesign) {
+        $('print-mockup-preview').src = selectedDesign.url;
+        $('download-mockup-btn').href = selectedDesign.url;
+        $('asset-mockup-card').style.display = '';
+      } else {
+        $('asset-mockup-card').style.display = 'none';
+      }
+
+      // Flat Design
+      if (o.flat_design_url) {
+        $('print-flat-preview').src = o.flat_design_url;
+        $('print-flat-preview').style.display = 'block';
+        $('download-flat-btn').href = o.flat_design_url;
+        $('download-flat-btn').classList.remove('disabled');
+        $('flat-loading').style.display = 'none';
+      } else {
+        $('print-flat-preview').style.display = 'none';
+        $('download-flat-btn').removeAttribute('href');
+        $('download-flat-btn').classList.add('disabled');
+        $('flat-loading').style.display = 'flex';
+      }
+
+      // Upscaled Design
+      if (o.upscaled_design_url) {
+        $('print-upscaled-preview').src = o.upscaled_design_url;
+        $('print-upscaled-preview').style.display = 'block';
+        $('download-upscaled-btn').href = o.upscaled_design_url;
+        $('download-upscaled-btn').classList.remove('disabled');
+        $('upscaled-loading').style.display = 'none';
+      } else {
+        $('print-upscaled-preview').style.display = 'none';
+        $('download-upscaled-btn').removeAttribute('href');
+        $('download-upscaled-btn').classList.add('disabled');
+        $('upscaled-loading').style.display = 'flex';
+      }
+
+      $('admin-response').value = o.admin_response || '';
+      setActiveStatus(o.status);
+
+      $('modal-overlay').hidden = false;
+    }
+
+    function setActiveStatus(status) {
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+      });
+    }
+
+    function closeModal() {
+      $('modal-overlay').hidden = true;
+      currentModalId = null;
+    }
+
+    $('btn-save-response').addEventListener('click', async () => {
+      if (!currentModalId) return;
+
+      const status = document.querySelector('.status-btn.active')?.dataset.status || 'pending';
+      const adminResponse = $('admin-response').value;
+
+      $('btn-save-response').disabled = true;
+      $('modal-save-status').textContent = 'Saving...';
+
+      try {
+        const res = await fetch(`/admin/orders/${currentModalId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, adminResponse }),
+        });
+
+        if (!res.ok) throw new Error('Save failed');
+
+        const data = await res.json();
+        const idx = allOrders.findIndex(o => o.id === currentModalId);
+        if (idx !== -1) allOrders[idx] = data.order;
+
+        renderOrders();
+        setActiveStatus(status);
+        $('modal-save-status').textContent = 'Saved!';
+        setTimeout(() => { $('modal-save-status').textContent = ''; }, 2000);
+      } catch (err) {
+        $('modal-save-status').textContent = 'Failed to save.';
+      } finally {
+        $('btn-save-response').disabled = false;
+      }
+    });
+
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => setActiveStatus(btn.dataset.status));
+    });
+
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        renderOrders();
+      });
+    });
+
+    $('modal-overlay').addEventListener('click', (e) => {
+      if (e.target === $('modal-overlay')) closeModal();
+    });
+
+    loadOrders();
+  </script>
+</body>
+</html>

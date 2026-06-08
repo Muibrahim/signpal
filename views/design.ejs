@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design — SignPal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/design.css">
+</head>
+<body>
+  <%- include('partials/nav') %>
+
+  <main class="design-main">
+    <div class="design-container">
+
+      <!-- Request Step -->
+      <section id="step-request" class="design-step active">
+        <div class="step-header">
+          <span class="step-number">01</span>
+          <h1 class="step-title">Design something for me</h1>
+          <p class="step-subtitle">Describe what you need — a business card, sign, poster, ID, anything. Our AI generates 3 design options for you.</p>
+        </div>
+
+        <form id="request-form" class="request-form">
+          <div class="form-group">
+            <label for="description">What do you need?</label>
+            <textarea id="description" name="description" rows="5" placeholder="e.g. I need a business card for my restaurant — modern style, red and black colors with the name STARLIGHT CAFE" maxlength="1000" required></textarea>
+            <div class="desc-footer">
+              <span class="char-count"><span id="char-count">0</span>/1000</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Inspiration images <span class="label-optional">(optional, up to 3)</span></label>
+            <div class="upload-area" id="upload-area">
+              <input type="file" id="file-input" name="images" accept="image/*" multiple hidden>
+              <div class="upload-placeholder" id="upload-placeholder">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                </svg>
+                <p>Drop images here or <span class="upload-link">click to browse</span></p>
+                <p class="upload-hint">PNG, JPG, WEBP — up to 3 files</p>
+              </div>
+              <div class="upload-previews" id="upload-previews"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-generate">
+            <span class="btn-text">Generate My Design</span>
+            <span class="btn-loading" hidden>
+              <svg class="spinner" viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70" stroke-linecap="round"/>
+              </svg>
+              Generating your designs...
+            </span>
+          </button>
+        </form>
+
+        <div id="request-error" class="error-msg" hidden></div>
+      </section>
+
+      <!-- Pick Step -->
+      <section id="step-pick" class="design-step">
+        <div class="step-header">
+          <span class="step-number">02</span>
+          <h1 class="step-title">Pick Your Design</h1>
+          <p class="step-subtitle">Here are 3 AI-generated options. Choose the one you love and we'll get started.</p>
+          <button type="button" class="btn-back" data-goto="step-request">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Try a different description
+          </button>
+        </div>
+
+        <div id="designs-grid" class="designs-grid"></div>
+
+        <div id="pick-actions" class="pick-actions">
+          <button type="button" class="btn-primary" id="btn-order" disabled>Continue to Order</button>
+          <p class="pick-hint">Select a design above to continue</p>
+        </div>
+      </section>
+
+      <!-- Order Step -->
+      <section id="step-order" class="design-step">
+        <div class="step-header">
+          <span class="step-number">03</span>
+          <h1 class="step-title">Submit Your Order</h1>
+          <p class="step-subtitle">We'll review your design and contact you within 24 hours.</p>
+          <button type="button" class="btn-back" data-goto="step-pick">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Back to designs
+          </button>
+        </div>
+
+        <div class="order-selected">
+          <img id="order-design-img" src="" alt="Selected design">
+          <div class="order-design-label">
+            <span class="design-num">Design #<span id="order-design-num">1</span> selected</span>
+          </div>
+        </div>
+
+        <form id="order-form" class="order-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="customerName">Your Name</label>
+              <input type="text" id="customerName" name="customerName" placeholder="Ali Mohamed" required>
+            </div>
+            <div class="form-group">
+              <label for="customerEmail">Email</label>
+              <input type="email" id="customerEmail" name="customerEmail" placeholder="ali@example.com" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="customerPhone">Phone (optional)</label>
+            <input type="tel" id="customerPhone" name="customerPhone" placeholder="+252 61 234 5678">
+          </div>
+
+          <button type="submit" class="btn-primary btn-submit">
+            <span class="btn-text">Submit Order Request</span>
+            <span class="btn-loading" hidden>
+              <svg class="spinner" viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70" stroke-linecap="round"/>
+              </svg>
+              Submitting...
+            </span>
+          </button>
+        </form>
+
+        <div id="order-success" class="success-panel" hidden>
+          <div class="success-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </div>
+          <h2>Order Submitted!</h2>
+          <p>We'll review your design and contact you within 24 hours.</p>
+          <a href="/design" class="btn-outline">Design Something Else</a>
+        </div>
+
+        <div id="order-error" class="error-msg" hidden></div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    const STATE = {
+      description: null,
+      images: [],       // File objects
+      designs: [],
+      selectedDesign: null,
+      loadingDesigns: false,
+    };
+
+    function $(id) { return document.getElementById(id); }
+
+    function goToStep(stepId) {
+      document.querySelectorAll('.design-step').forEach(s => s.classList.remove('active'));
+      $(stepId).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- File upload handling ---
+    const fileInput = $('file-input');
+    const uploadArea = $('upload-area');
+    const uploadPlaceholder = $('upload-placeholder');
+    const uploadPreviews = $('upload-previews');
+
+    function renderPreviews() {
+      uploadPreviews.innerHTML = '';
+      if (STATE.images.length === 0) {
+        uploadPlaceholder.style.display = '';
+        return;
+      }
+      uploadPlaceholder.style.display = 'none';
+
+      STATE.images.forEach((file, i) => {
+        const div = document.createElement('div');
+        div.className = 'preview-item';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          div.innerHTML = `
+            <img src="${e.target.result}" alt="Inspiration ${i + 1}">
+            <button type="button" class="preview-remove" data-index="${i}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          `;
+          div.querySelector('.preview-remove').addEventListener('click', (e) => {
+            e.stopPropagation();
+            STATE.images.splice(i, 1);
+            renderPreviews();
+          });
+        };
+        reader.readAsDataURL(file);
+        uploadPreviews.appendChild(div);
+      });
+
+      if (STATE.images.length < 3) {
+        const addMore = document.createElement('div');
+        addMore.className = 'preview-add-more';
+        addMore.innerHTML = `
+          <button type="button" id="add-more-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add more
+          </button>
+        `;
+        uploadPreviews.appendChild(addMore);
+        $('add-more-btn').addEventListener('click', () => fileInput.click());
+      }
+    }
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('drag-over');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('drag-over');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('drag-over');
+      addFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      addFiles(e.target.files);
+      fileInput.value = '';
+    });
+
+    function addFiles(files) {
+      for (const file of files) {
+        if (STATE.images.length >= 3) break;
+        if (!file.type.startsWith('image/')) continue;
+        STATE.images.push(file);
+      }
+      renderPreviews();
+    }
+
+    // --- Character counter ---
+    $('description').addEventListener('input', (e) => {
+      $('char-count').textContent = e.target.value.length;
+    });
+
+    // --- Submit request form ---
+    $('request-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const description = $('description').value.trim();
+      if (!description) return;
+
+      STATE.description = description;
+      STATE.designs = [];
+      STATE.selectedDesign = null;
+
+      const btn = e.target.querySelector('.btn-generate');
+      btn.querySelector('.btn-text').hidden = true;
+      btn.querySelector('.btn-loading').hidden = false;
+      btn.disabled = true;
+      $('request-error').hidden = true;
+      STATE.loadingDesigns = true;
+
+      try {
+        // Convert File objects to base64 data URLs for JSON transport
+        const imageDataUrls = await Promise.all(
+          STATE.images.map(f => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(f);
+          }))
+        );
+
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description, images: imageDataUrls }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+        STATE.designs = data.designs;
+        renderDesignGrid();
+        goToStep('step-pick');
+      } catch (err) {
+        $('request-error').textContent = err.message;
+        $('request-error').hidden = false;
+      } finally {
+        btn.querySelector('.btn-text').hidden = false;
+        btn.querySelector('.btn-loading').hidden = true;
+        btn.disabled = false;
+        STATE.loadingDesigns = false;
+      }
+    });
+
+    function renderDesignGrid() {
+      const grid = $('designs-grid');
+      grid.innerHTML = '';
+
+      STATE.designs.forEach((d, i) => {
+        const card = document.createElement('div');
+        card.className = 'design-card';
+        card.dataset.index = i;
+        card.onclick = () => selectDesign(i);
+        card.innerHTML = `
+          <div class="design-img-wrap">
+            <img src="${d.url}" alt="Design option ${i + 1}" loading="lazy">
+          </div>
+          <div class="design-card-footer">
+            <span class="design-label">Option ${i + 1}</span>
+            <span class="design-select-btn">Select</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      $('btn-order').disabled = true;
+      $('pick-hint').textContent = 'Select a design above to continue';
+    }
+
+    function selectDesign(index) {
+      STATE.selectedDesign = index;
+      document.querySelectorAll('.design-card').forEach((c, i) => {
+        c.classList.toggle('selected', i === index);
+        c.querySelector('.design-select-btn').textContent = i === index ? 'Selected' : 'Select';
+      });
+      $('btn-order').disabled = false;
+      $('pick-hint').textContent = '';
+    }
+
+    // --- Continue to order ---
+    $('btn-order').addEventListener('click', () => {
+      if (STATE.selectedDesign === null) return;
+      const d = STATE.designs[STATE.selectedDesign];
+      $('order-design-img').src = d.url;
+      $('order-design-num').textContent = STATE.selectedDesign + 1;
+      goToStep('step-order');
+    });
+
+    // --- Submit order ---
+    $('order-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('.btn-submit');
+      btn.querySelector('.btn-text').hidden = false;
+      btn.querySelector('.btn-loading').hidden = false;
+      btn.disabled = true;
+      $('order-error').hidden = true;
+
+      const formData = new FormData(e.target);
+
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            userDescription: STATE.description,
+            designs: STATE.designs,
+            selectedDesign: STATE.selectedDesign,
+            customerName: formData.get('customerName'),
+            customerEmail: formData.get('customerEmail'),
+            customerPhone: formData.get('customerPhone') || null,
+          }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Order failed');
+
+        $('order-form').hidden = true;
+        $('order-success').hidden = false;
+      } catch (err) {
+        $('order-error').textContent = err.message;
+        $('order-error').hidden = false;
+      } finally {
+        btn.querySelector('.btn-text').hidden = false;
+        btn.querySelector('.btn-loading').hidden = true;
+        btn.disabled = false;
+      }
+    });
+
+    // --- Back navigation ---
+    document.querySelectorAll('.btn-back').forEach(btn => {
+      btn.addEventListener('click', () => goToStep(btn.dataset.goto));
+    });
+  </script>
+</body>
+</html>
