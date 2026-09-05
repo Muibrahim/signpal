@@ -1,6 +1,6 @@
 # SignPal
 
-SignPal is an AI-assisted print storefront for Somalia and Somaliland. Customers choose a product, generate three distinct concepts, preview the selected artwork as a product mockup, and choose printed fulfillment or a paid design download.
+SignPal is a full printing-company website and AI-assisted print storefront for Somalia and Somaliland. Customers can explore products and services, generate three distinct concepts, upload existing artwork, request custom production, preview the selected artwork as a product mockup, and choose printed fulfillment or a paid design download.
 
 ## Customer flow
 
@@ -32,6 +32,11 @@ npm run dev
 ## Routes
 
 - `/` — marketing site
+- `/products` — complete product catalog
+- `/services` — design, printing, fabrication and installation capabilities
+- `/portfolio` — production categories and project-gallery structure
+- `/about` — company and production story
+- `/contact` — quotation and production contact path
 - `/design` — product and design journey
 - `/order/:token` — private customer payment/status page
 - `/admin` — authenticated quote, payment and production dashboard

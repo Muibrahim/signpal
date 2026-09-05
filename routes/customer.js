@@ -15,7 +15,7 @@ const { estimatePrice } = require('../lib/pricing');
 
 // Design tool page
 router.get('/design', (_req, res) => {
-  res.render('design', { themeCSS: buildThemeCSS(), productCategories: CATEGORIES, products: PRODUCTS });
+  res.render('design', { slug: 'design', themeCSS: buildThemeCSS(), productCategories: CATEGORIES, products: PRODUCTS });
 });
 
 router.get('/api/products', (_req, res) => {

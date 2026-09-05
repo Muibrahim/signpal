@@ -26,6 +26,11 @@
         </div>
 
         <form id="request-form" class="request-form">
+          <fieldset class="entry-mode-picker">
+            <legend>How would you like to begin?</legend>
+            <label class="entry-mode active"><input type="radio" name="orderMode" value="create" checked><span><strong>Create my design</strong><small>Receive three different concepts</small></span></label>
+            <label class="entry-mode"><input type="radio" name="orderMode" value="upload"><span><strong>Upload my artwork</strong><small>Use my finished design for printing</small></span></label>
+          </fieldset>
           <div class="form-group product-picker-group">
             <label for="product-search">What would you like to make?</label>
             <div class="product-search-wrap">
@@ -96,7 +101,7 @@
           </div>
 
           <div class="form-group">
-            <label>Inspiration images <span class="label-optional">(optional, up to 3)</span></label>
+            <label id="upload-label">Inspiration images <span class="label-optional">(optional, up to 3)</span></label>
             <div class="upload-area" id="upload-area">
               <input type="file" id="file-input" name="images" accept="image/*" multiple hidden>
               <div class="upload-placeholder" id="upload-placeholder">
@@ -278,6 +283,34 @@
     });
     filterProducts();
 
+    const initialParams = new URLSearchParams(window.location.search);
+    const initialProduct = initialParams.get('product');
+    if (initialProduct) {
+      const requestedCard = productCards.find(card => card.dataset.productId === initialProduct);
+      if (requestedCard) {
+        activeProductCategory = 'all';
+        document.querySelectorAll('.product-tab').forEach(item => item.classList.remove('active'));
+        filterProducts();
+        requestedCard.click();
+        requestedCard.scrollIntoView({ block: 'center' });
+      }
+    }
+
+    function setOrderMode(mode) {
+      document.querySelectorAll('.entry-mode').forEach(label => label.classList.toggle('active', label.querySelector('input').value === mode));
+      $('upload-label').innerHTML = mode === 'upload'
+        ? 'Finished artwork <span class="label-optional">(required, one image)</span>'
+        : 'Inspiration images <span class="label-optional">(optional, up to 3)</span>';
+      document.querySelector('.btn-generate .btn-text').textContent = mode === 'upload' ? 'Continue with My Artwork' : 'Generate My Design';
+    }
+    document.querySelectorAll('input[name="orderMode"]').forEach(input => input.addEventListener('change', () => setOrderMode(input.value)));
+    if (initialParams.get('mode') === 'upload') {
+      const uploadMode = document.querySelector('input[name="orderMode"][value="upload"]');
+      uploadMode.checked = true;
+      setOrderMode('upload');
+      setTimeout(() => $('upload-area').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    }
+
     let priceEstimateTimer;
     async function refreshPriceEstimate() {
       clearTimeout(priceEstimateTimer);
@@ -423,6 +456,14 @@
 
       let description = $('description').value.trim();
       if (!description) return;
+      const orderMode = new FormData(e.target).get('orderMode') || 'create';
+
+      if (orderMode === 'upload' && STATE.images.length === 0) {
+        $('request-error').textContent = 'Upload your finished artwork before continuing.';
+        $('request-error').hidden = false;
+        $('upload-area').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
 
       if ($('productType').value === 'custom') {
         const customName = $('customProductName').value.trim();
@@ -459,6 +500,19 @@
         const productType = $('productType')?.value || 'business_card';
         const languages = $('languages')?.value || 'English + Somali';
         const brandId = $('brandId')?.value || '';
+
+        if (orderMode === 'upload') {
+          const selectedCard = productCards.find(card => card.dataset.productId === productType);
+          STATE.designs = [{ url: imageDataUrls[0], label: 'Uploaded artwork', isFlat: true }];
+          STATE.selectedDesign = 0;
+          STATE.product = { name: selectedCard?.querySelector('strong')?.textContent || 'Product', icon: 'custom' };
+          $('order-design-img').src = imageDataUrls[0];
+          $('order-design-num').textContent = 'Uploaded';
+          $('order-product-name').textContent = STATE.product.name;
+          $('mockup-scene').className = 'mockup-scene mockup-custom';
+          goToStep('step-order');
+          return;
+        }
 
         const res = await fetch('/api/generate', {
           method: 'POST',

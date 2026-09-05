@@ -452,8 +452,8 @@
 }
 
 .btn-save {
-  background: var(--cyan);
-  color: #0c0c14;
+  background: #c45100;
+  color: #fff;
   border: none;
   padding: 12px 28px;
   border-radius: 8px;

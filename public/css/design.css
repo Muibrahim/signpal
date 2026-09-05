@@ -154,9 +154,15 @@
 }
 
 .form-select {
-  background: var(--bg-card, #121824);
-  border: 1px solid var(--border, #1f293d);
-  color: var(--white, #ffffff);
+  appearance: none;
+  color-scheme: light;
+  background-color: #ffffff;
+  background-image: linear-gradient(45deg, transparent 50%, #0c1a67 50%), linear-gradient(135deg, #0c1a67 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  border: 1px solid var(--border);
+  color: #111735;
   padding: 12px 16px;
   border-radius: 8px;
   font-family: var(--font-body);
@@ -211,7 +217,12 @@ input:focus, select:focus, textarea:focus {
 
 select {
   cursor: pointer;
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #111735;
 }
+
+select option { background: #ffffff; color: #111735; }
 
 textarea {
   resize: vertical;
@@ -337,8 +348,8 @@ textarea {
 
 /* Generate Button */
 .btn-generate {
-  background: var(--cyan);
-  color: #0c0c14;
+  background: #c45100;
+  color: #fff;
   border: none;
   padding: 16px 40px;
   border-radius: 10px;
@@ -475,8 +486,8 @@ textarea {
 }
 
 .btn-primary {
-  background: var(--cyan);
-  color: #0c0c14;
+  background: #c45100;
+  color: #fff;
   border: none;
   padding: 14px 40px;
   border-radius: 10px;
@@ -489,7 +500,7 @@ textarea {
 }
 
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
+  background: #9f3f00;
   transform: translateY(-1px);
 }
 
@@ -603,6 +614,10 @@ textarea {
   flex-direction: column;
   gap: 32px;
 }
+
+.entry-mode-picker{border:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}.entry-mode-picker legend{font:600 .8rem var(--font-display);color:var(--brand-navy);margin-bottom:10px}.entry-mode{border:1px solid var(--border);background:#fff;border-radius:10px;padding:16px;display:flex;gap:10px;cursor:pointer}.entry-mode.active{border-color:var(--brand-orange);box-shadow:0 0 0 3px rgba(254,106,0,.09)}.entry-mode input{accent-color:var(--brand-orange);margin-top:4px}.entry-mode span{display:flex;flex-direction:column}.entry-mode strong{font:600 .85rem var(--font-display);color:var(--brand-navy)}.entry-mode small{color:var(--muted);font-size:.76rem;margin-top:3px}
+
+@media(max-width:600px){.entry-mode-picker{grid-template-columns:1fr}}
 
 textarea[name="description"] {
   min-height: 140px;

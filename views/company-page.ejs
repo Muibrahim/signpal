@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= page.title %> — SignPal</title>
+  <meta name="description" content="<%= page.intro %>">
+  <link rel="icon" href="/images/signpal-logo-640.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+  <%- include('partials/topbar') %>
+  <%- include('partials/nav') %>
+  <main>
+    <header class="page-hero">
+      <div class="section-shell">
+        <span class="eyebrow"><%= page.eyebrow %></span>
+        <h1><%= page.title %></h1>
+        <p><%= page.intro %></p>
+        <div class="button-row"><a class="button button-primary" href="/design">Start an order</a><a class="button button-light" href="/contact">Talk to production</a></div>
+      </div>
+    </header>
+
+    <% if (slug === 'products') { %>
+      <section class="section section-white"><div class="section-shell"><div class="catalog-grid">
+        <% products.forEach((product) => { %><article class="catalog-card"><span><%= product.category %></span><h2><%= product.name %></h2><p><%= product.format %></p><a href="/design?product=<%= product.id %>">Configure product →</a></article><% }) %>
+      </div></div></section>
+    <% } else if (slug === 'contact') { %>
+      <section class="section section-white" id="contact"><div class="section-shell contact-grid"><div><span class="eyebrow">Custom and corporate work</span><h2>Start with a conversation</h2><p class="section-copy">Send the product, approximate size, quantity, deadline and installation location. The team can prepare the right specification before pricing.</p><div class="placeholder-callout"><strong>Editable business placeholders</strong><p>The regular phone and opening hours remain clearly marked so you can replace them when confirmed.</p></div></div><div class="contact-panel"><span>Phone <strong>[Add factory phone]</strong></span><a href="https://wa.me/252633336168">WhatsApp <strong>+252 63 3336168</strong></a><a href="mailto:info@signpal.net">Email <strong>info@signpal.net</strong></a><span>Factory <strong>Hargeisa, Somaliland</strong></span><span>Opening hours <strong>[Add business hours]</strong></span><span>Service area <strong>Somalia & Somaliland</strong></span></div></div></section>
+    <% } else if (page.cards) { %>
+      <section class="section section-white"><div class="section-shell"><div class="content-card-grid"><% page.cards.forEach((card, index) => { %><article><b><%= String(index + 1).padStart(2, '0') %></b><h2><%= card[0] %></h2><p><%= card[1] %></p></article><% }) %></div><div class="page-action-panel"><div><span class="eyebrow">Ready when you are</span><h2>Continue with SignPal</h2></div><div class="button-row"><a class="button button-primary" href="/design">Start an order</a><a class="button button-light" href="/contact">Request a quote</a></div></div></div></section>
+    <% } else { %>
+      <%- include('partials/company-sections') %>
+    <% } %>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>
