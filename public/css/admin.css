@@ -96,7 +96,7 @@
 
 .order-card:hover {
   background: var(--surface-2);
-  border-color: rgba(0,229,255,0.3);
+  border-color: rgba(254,106,0,0.3);
 }
 
 .order-design img {
@@ -134,7 +134,7 @@
   margin-bottom: 6px;
   font-weight: 600;
   color: var(--cyan);
-  text-shadow: 0 0 10px rgba(0,229,255,0.3);
+  text-shadow: 0 0 10px rgba(254,106,0,0.3);
 }
 
 .order-meta {
@@ -168,7 +168,7 @@
 .status-pending {
   color: var(--amber);
   background: var(--amber-dim);
-  border: 1px solid rgba(255,179,0,0.2);
+  border: 1px solid rgba(12,26,103,0.2);
 }
 
 .status-in_progress {
@@ -268,7 +268,7 @@
 
 .modal-close:hover {
   color: var(--white);
-  border-color: rgba(0,229,255,0.4);
+  border-color: rgba(254,106,0,0.4);
 }
 
 .modal-body {
@@ -305,7 +305,7 @@
 
 .modal-design-thumb.selected {
   border-color: var(--cyan);
-  box-shadow: 0 0 10px rgba(0,229,255,0.3);
+  box-shadow: 0 0 10px rgba(254,106,0,0.3);
 }
 
 .modal-design-thumb img {
@@ -322,7 +322,7 @@
   font-size: 0.65rem;
   font-weight: 700;
   color: var(--cyan);
-  background: rgba(0,229,255,0.15);
+  background: rgba(254,106,0,0.15);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -429,7 +429,7 @@
 }
 
 .status-btn:hover {
-  border-color: rgba(0,229,255,0.4);
+  border-color: rgba(254,106,0,0.4);
   color: var(--white);
 }
 
@@ -462,7 +462,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: opacity 0.2s;
-  box-shadow: 0 0 15px rgba(0,229,255,0.3);
+  box-shadow: 0 0 15px rgba(254,106,0,0.3);
 }
 
 .btn-save:hover:not(:disabled) {
@@ -507,7 +507,7 @@
 }
 
 .print-asset-card:hover {
-  border-color: rgba(0,229,255,0.3);
+  border-color: rgba(254,106,0,0.3);
 }
 
 .asset-preview-wrap {
@@ -628,6 +628,111 @@
   cursor: not-allowed;
 }
 
+/* Print Pipeline Health Indicators & Error Banners */
+.print-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.print-status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-print-pending {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.badge-print-processing {
+  background: rgba(254,106,0, 0.12);
+  color: #fe6a00;
+  border: 1px solid rgba(254,106,0, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.badge-print-completed {
+  background: rgba(46, 204, 113, 0.12);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.badge-print-failed {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.print-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+.print-error-banner {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.error-banner-content {
+  flex: 1;
+  min-width: 200px;
+}
+
+.error-title {
+  font-weight: 700;
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+}
+
+.error-text {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  word-break: break-word;
+}
+
+.btn-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-retry:hover {
+  background: #c0392b;
+}
+
+.btn-retry:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .admin-main { padding: 40px 20px; }
@@ -636,3 +741,6 @@
   .modal-info-grid { grid-template-columns: 1fr; }
   .print-assets-grid { grid-template-columns: 1fr; }
 }
+.commerce-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.commerce-row input { width: 160px; }
+.commerce-row .btn-download, .commerce-row .btn-save { position: static; text-decoration: none; }

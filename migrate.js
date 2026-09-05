@@ -20,13 +20,17 @@
  *     }
  *   };
  */
+require('dotenv').config();
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('localhost')
+    ? false
+    : { rejectUnauthorized: false },
 });
 
 async function migrate() {
@@ -115,7 +119,7 @@ async function runFolderMigrations(client) {
   const appliedNames = new Set(applied.rows.map(r => r.name));
 
   for (const file of files) {
-    const name = file.replace(/\/(js|sql)$/, '');
+    const name = file.replace(/\.(js|sql)$/, '');
     if (appliedNames.has(name)) {
       continue;
     }
@@ -144,6 +148,6 @@ async function runFolderMigrations(client) {
 }
 
 migrate().catch(err => {
-  console.error('Migration failed:', err.message);
+  console.error('Migration failed:', err);
   process.exit(1);
 });

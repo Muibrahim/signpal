@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Design — SignPal</title>
+  <link rel="icon" href="/images/signpal-logo-640.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -20,14 +21,75 @@
       <section id="step-request" class="design-step active">
         <div class="step-header">
           <span class="step-number">01</span>
-          <h1 class="step-title">Design something for me</h1>
-          <p class="step-subtitle">Describe what you need — a business card, sign, poster, ID, anything. Our AI generates 3 design options for you.</p>
+          <h1 class="step-title">Create your design</h1>
+          <p class="step-subtitle">Choose a product and tell us what it should communicate. SignPal will create three distinct directions for you.</p>
         </div>
 
         <form id="request-form" class="request-form">
+          <div class="form-group product-picker-group">
+            <label for="product-search">What would you like to make?</label>
+            <div class="product-search-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="product-search" type="search" placeholder="Search books, banners, signs, stickers…" autocomplete="off">
+            </div>
+            <input id="productType" name="productType" type="hidden" value="business_card">
+            <div class="product-tabs" role="tablist" aria-label="Product categories">
+              <% productCategories.forEach((category, index) => { %>
+                <button type="button" class="product-tab <%= index === 0 ? 'active' : '' %>" data-category="<%= category.id %>"><%= category.name %></button>
+              <% }) %>
+            </div>
+            <div id="product-grid" class="product-grid">
+              <% products.forEach((product) => { %>
+                <button type="button" class="product-card <%= product.id === 'business_card' ? 'selected' : '' %>" data-product-id="<%= product.id %>" data-product-name="<%= product.name.toLowerCase() %>" data-categories="<%= product.categories.join(' ') %>">
+                  <span class="product-card-mark"><%= product.name.charAt(0) %></span>
+                  <span class="product-card-copy"><strong><%= product.name %></strong><small><%= product.format %></small></span>
+                  <span class="product-card-check">✓</span>
+                </button>
+              <% }) %>
+            </div>
+            <button id="show-all-products" type="button" class="btn-show-products">View all products</button>
+            <div id="custom-product-fields" class="custom-product-fields" hidden>
+              <div class="form-row">
+                <div class="form-group"><label for="customProductName">Product name</label><input id="customProductName" type="text" placeholder="e.g. branded tent"></div>
+                <div class="form-group"><label for="customProductSize">Approximate size</label><input id="customProductSize" type="text" placeholder="e.g. 3 m × 3 m"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label for="customProductQuantity">Quantity</label><input id="customProductQuantity" type="number" min="1" value="1"></div>
+                <div class="form-group"><label for="customProductUse">Where will it be used?</label><select id="customProductUse"><option>Indoor</option><option>Outdoor</option><option>Both</option><option>Not sure</option></select></div>
+              </div>
+              <p class="custom-note">Custom fabrication is reviewed before a final production price is charged.</p>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="languages">Language & Script</label>
+              <select id="languages" name="languages" class="form-select">
+                <option value="English + Somali">English + Somali (Bi-lingual)</option>
+                <option value="English + Arabic">English + Arabic (Calligraphic)</option>
+                <option value="Somali + Arabic">Somali + Arabic</option>
+                <option value="English Only">English Only</option>
+                <option value="Somali Only">Somali Only</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="quantity">Estimated quantity</label>
+              <input id="quantity" name="quantity" type="number" min="1" value="100">
+            </div>
+          </div>
+
+          <div id="price-estimate" class="price-estimate"><span>Estimated print price</span><strong>Choose a product and quantity</strong><small>Final price depends on current factory cost and specifications.</small></div>
+
+          <div class="form-group">
+            <label for="brandId">Brand DNA Profile <span class="label-optional">(Optional — applies brand colors & font rules)</span></label>
+            <select id="brandId" name="brandId" class="form-select">
+              <option value="">No Brand Selected (New Design)</option>
+            </select>
+          </div>
+
           <div class="form-group">
             <label for="description">What do you need?</label>
-            <textarea id="description" name="description" rows="5" placeholder="e.g. I need a business card for my restaurant — modern style, red and black colors with the name STARLIGHT CAFE" maxlength="1000" required></textarea>
+            <textarea id="description" name="description" rows="5" placeholder="e.g. Business card for Mustafe Ibrahim Ahmed, Founder of Grow Media. Phone: +252 63 4226437, Hargeisa, Somaliland." maxlength="1000" required></textarea>
             <div class="desc-footer">
               <span class="char-count"><span id="char-count">0</span>/1000</span>
             </div>
@@ -80,7 +142,7 @@
 
         <div id="pick-actions" class="pick-actions">
           <button type="button" class="btn-primary" id="btn-order" disabled>Continue to Order</button>
-          <p class="pick-hint">Select a design above to continue</p>
+          <p id="pick-hint" class="pick-hint">Select a design above to continue</p>
         </div>
       </section>
 
@@ -98,14 +160,29 @@
           </button>
         </div>
 
-        <div class="order-selected">
-          <img id="order-design-img" src="" alt="Selected design">
+        <div class="order-selected mockup-stage" id="mockup-stage">
+          <div class="mockup-scene" id="mockup-scene">
+            <img id="order-design-img" src="" alt="Selected design">
+          </div>
           <div class="order-design-label">
-            <span class="design-num">Design #<span id="order-design-num">1</span> selected</span>
+            <span class="design-num"><span id="order-product-name">Product</span> mockup · Concept <span id="order-design-num">1</span></span>
           </div>
         </div>
 
         <form id="order-form" class="order-form">
+          <fieldset class="fulfillment-picker">
+            <legend>What would you like to do?</legend>
+            <label class="fulfillment-card selected">
+              <input type="radio" name="fulfillmentType" value="print" checked>
+              <span><strong>Print it with SignPal</strong><small>Your design is free. Pay for production and delivery.</small></span>
+              <b>Recommended</b>
+            </label>
+            <label class="fulfillment-card">
+              <input type="radio" name="fulfillmentType" value="download">
+              <span><strong>Download the design</strong><small>Pay the design fee, then receive production-ready files.</small></span>
+            </label>
+          </fieldset>
+
           <div class="form-row">
             <div class="form-group">
               <label for="customerName">Your Name</label>
@@ -123,7 +200,7 @@
           </div>
 
           <button type="submit" class="btn-primary btn-submit">
-            <span class="btn-text">Submit Order Request</span>
+            <span class="btn-text">Continue to secure payment</span>
             <span class="btn-loading" hidden>
               <svg class="spinner" viewBox="0 0 24 24" width="20" height="20">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70" stroke-linecap="round"/>
@@ -139,8 +216,8 @@
               <path d="M20 6L9 17l-5-5"/>
             </svg>
           </div>
-          <h2>Order Submitted!</h2>
-          <p>We'll review your design and contact you within 24 hours.</p>
+          <h2>Order saved</h2>
+          <p id="payment-next-message">Payment must be completed before production or download.</p>
           <a href="/design" class="btn-outline">Design Something Else</a>
         </div>
 
@@ -157,9 +234,81 @@
       designs: [],
       selectedDesign: null,
       loadingDesigns: false,
+      product: null,
     };
 
-    function $(id) { return document.getElementById(id); }
+    const productSearch = $('product-search');
+    const productCards = [...document.querySelectorAll('.product-card')];
+    const PRODUCT_MINIMUMS = { business_card: 100, brochure: 20, flyer: 20, letterhead: 100, envelope: 100, sticker: 12, product_label: 12 };
+    let activeProductCategory = 'popular';
+
+    function filterProducts() {
+      const query = productSearch.value.trim().toLowerCase();
+      productCards.forEach(card => {
+        const matchesSearch = !query || card.dataset.productName.includes(query);
+        const matchesCategory = query || activeProductCategory === 'all' || card.dataset.categories.split(' ').includes(activeProductCategory);
+        card.hidden = !(matchesSearch && matchesCategory);
+      });
+    }
+
+    productCards.forEach(card => card.addEventListener('click', () => {
+      productCards.forEach(item => item.classList.remove('selected'));
+      card.classList.add('selected');
+      $('productType').value = card.dataset.productId;
+      $('quantity').value = PRODUCT_MINIMUMS[card.dataset.productId] || 1;
+      $('custom-product-fields').hidden = card.dataset.productId !== 'custom';
+      refreshPriceEstimate();
+    }));
+
+    document.querySelectorAll('.product-tab').forEach(tab => tab.addEventListener('click', () => {
+      document.querySelectorAll('.product-tab').forEach(item => item.classList.remove('active'));
+      tab.classList.add('active');
+      activeProductCategory = tab.dataset.category;
+      productSearch.value = '';
+      filterProducts();
+    }));
+
+    productSearch.addEventListener('input', filterProducts);
+    $('show-all-products').addEventListener('click', () => {
+      activeProductCategory = 'all';
+      document.querySelectorAll('.product-tab').forEach(item => item.classList.remove('active'));
+      productSearch.value = '';
+      filterProducts();
+      $('show-all-products').hidden = true;
+    });
+    filterProducts();
+
+    let priceEstimateTimer;
+    async function refreshPriceEstimate() {
+      clearTimeout(priceEstimateTimer);
+      priceEstimateTimer = setTimeout(async () => {
+        const panel = $('price-estimate');
+        try {
+          const query = new URLSearchParams({ productType: $('productType').value, quantity: $('quantity').value || '1' });
+          const res = await fetch(`/api/pricing/estimate?${query}`);
+          const estimate = await res.json();
+          if (estimate.available) {
+            const currency = estimate.mode === 'approved' ? '$' : '';
+            const suffix = estimate.mode === 'approved' ? '' : ' provisional units';
+            panel.querySelector('strong').textContent = `${currency}${Number(estimate.total).toFixed(2)}${suffix} · ${currency}${Number(estimate.unitPrice).toFixed(2)} per ${estimate.unit}`;
+            panel.querySelector('small').textContent = estimate.quoteRequired
+              ? 'We will confirm this estimate before payment.'
+              : estimate.marginProtected
+                ? '10% competitor reduction with SignPal minimum-margin protection.'
+                : 'Exact SignPal price: 10% below the approved competitor baseline.';
+          } else {
+            panel.querySelector('strong').textContent = 'Custom quote required';
+            panel.querySelector('small').textContent = estimate.reason || 'Specifications must be confirmed.';
+          }
+        } catch (_) { panel.querySelector('strong').textContent = 'Estimate temporarily unavailable'; }
+      }, 180);
+    }
+    $('quantity').addEventListener('input', refreshPriceEstimate);
+    refreshPriceEstimate();
+
+    function $(id) {
+      return document.getElementById(id) || { textContent: '', style: {}, classList: { add() {}, remove() {}, toggle() {} }, hidden: false, addEventListener() {} };
+    }
 
     function goToStep(stepId) {
       document.querySelectorAll('.design-step').forEach(s => s.classList.remove('active'));
@@ -249,6 +398,20 @@
       renderPreviews();
     }
 
+    async function loadBrandProfiles() {
+      try {
+        const res = await fetch('/api/brands');
+        if (!res.ok) return;
+        const { brands } = await res.json();
+        const select = $('brandId');
+        if (select && brands && brands.length > 0) {
+          select.innerHTML = '<option value="">No Brand Selected (New Design)</option>' +
+            brands.map(b => `<option value="${b.id}">${b.name} (${b.industry || 'Brand Profile'})</option>`).join('');
+        }
+      } catch (_) {}
+    }
+    loadBrandProfiles();
+
     // --- Character counter ---
     $('description').addEventListener('input', (e) => {
       $('char-count').textContent = e.target.value.length;
@@ -258,8 +421,18 @@
     $('request-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const description = $('description').value.trim();
+      let description = $('description').value.trim();
       if (!description) return;
+
+      if ($('productType').value === 'custom') {
+        const customName = $('customProductName').value.trim();
+        if (!customName) {
+          $('request-error').textContent = 'Please tell us the name of your custom product.';
+          $('request-error').hidden = false;
+          return;
+        }
+        description = `Custom product: ${customName}. Approximate size: ${$('customProductSize').value || 'not specified'}. Quantity: ${$('customProductQuantity').value || '1'}. Use: ${$('customProductUse').value}. ${description}`;
+      }
 
       STATE.description = description;
       STATE.designs = [];
@@ -283,16 +456,27 @@
           }))
         );
 
+        const productType = $('productType')?.value || 'business_card';
+        const languages = $('languages')?.value || 'English + Somali';
+        const brandId = $('brandId')?.value || '';
+
         const res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ description, images: imageDataUrls }),
+          body: JSON.stringify({
+            description,
+            images: imageDataUrls,
+            productType,
+            languages,
+            brandId
+          }),
         });
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Generation failed');
 
         STATE.designs = data.designs;
+        STATE.product = data.product;
         renderDesignGrid();
         goToStep('step-pick');
       } catch (err) {
@@ -320,7 +504,7 @@
             <img src="${d.url}" alt="Design option ${i + 1}" loading="lazy">
           </div>
           <div class="design-card-footer">
-            <span class="design-label">Option ${i + 1}</span>
+            <span class="design-label">${d.label || ('Option ' + (i + 1))}</span>
             <span class="design-select-btn">Select</span>
           </div>
         `;
@@ -347,14 +531,20 @@
       const d = STATE.designs[STATE.selectedDesign];
       $('order-design-img').src = d.url;
       $('order-design-num').textContent = STATE.selectedDesign + 1;
+      $('order-product-name').textContent = STATE.product?.name || 'Product';
+      $('mockup-scene').className = `mockup-scene mockup-${STATE.product?.icon || 'custom'}`;
       goToStep('step-order');
     });
+
+    document.querySelectorAll('input[name="fulfillmentType"]').forEach(input => input.addEventListener('change', () => {
+      document.querySelectorAll('.fulfillment-card').forEach(card => card.classList.toggle('selected', card.contains(input)));
+    }));
 
     // --- Submit order ---
     $('order-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('.btn-submit');
-      btn.querySelector('.btn-text').hidden = false;
+      btn.querySelector('.btn-text').hidden = true;
       btn.querySelector('.btn-loading').hidden = false;
       btn.disabled = true;
       $('order-error').hidden = true;
@@ -371,6 +561,9 @@
             customerName: formData.get('customerName'),
             customerEmail: formData.get('customerEmail'),
             customerPhone: formData.get('customerPhone') || null,
+            productType: $('productType').value,
+            fulfillmentType: formData.get('fulfillmentType'),
+            quantity: $('quantity').value,
           }),
           headers: { 'Content-Type': 'application/json' },
         });
@@ -380,6 +573,14 @@
 
         $('order-form').hidden = true;
         $('order-success').hidden = false;
+        $('payment-next-message').textContent = data.paymentConfigured
+          ? 'Your order is awaiting secure Sifalo Pay checkout. Production and downloads remain locked until payment is verified.'
+          : 'Online payment is being configured. We saved your order, but production and downloads remain locked until payment is verified.';
+        const orderLink = document.createElement('a');
+        orderLink.className = 'btn-primary';
+        orderLink.href = data.orderUrl;
+        orderLink.textContent = data.paymentConfigured ? 'Open secure payment' : 'View order status';
+        $('order-success').appendChild(orderLink);
       } catch (err) {
         $('order-error').textContent = err.message;
         $('order-error').hidden = false;

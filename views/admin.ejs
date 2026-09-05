@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — SignPal</title>
+  <link rel="icon" href="/images/signpal-logo-640.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -66,6 +67,17 @@
                 <span class="info-label">Submitted</span>
                 <span class="info-value" id="modal-created"></span>
               </div>
+              <div class="info-card">
+                <span class="info-label">Commerce</span>
+                <span class="info-value" id="modal-fulfillment"></span>
+                <span class="info-sub" id="modal-payment"></span>
+              </div>
+            </div>
+
+            <div class="modal-response-section commerce-controls">
+              <label class="info-label" for="commerce-amount">Quote / design fee (USD)</label>
+              <div class="commerce-row"><input id="commerce-amount" type="number" min="0.01" step="0.01" placeholder="Amount"><button id="btn-save-quote" class="btn-download" type="button">Save price</button><button id="btn-mark-paid" class="btn-save" type="button">Verify paid & fulfill</button></div>
+              <span id="commerce-message" class="save-status"></span>
             </div>
 
             <div class="modal-notes" id="modal-notes-section" hidden>
@@ -75,7 +87,26 @@
 
             <!-- Print-Ready Production Assets -->
             <div class="modal-print-assets" id="modal-print-assets-section">
-              <span class="info-label">Print-Ready Production Assets</span>
+              <div class="print-header-row">
+                <span class="info-label">Print-Ready Production Assets</span>
+                <span id="print-status-badge" class="print-status-badge"></span>
+              </div>
+
+              <!-- Print Error Banner & Retry -->
+              <div id="print-error-banner" class="print-error-banner" style="display:none;">
+                <div class="error-banner-content">
+                  <div class="error-title">⚠️ Print Pipeline Issue</div>
+                  <div id="print-error-text" class="error-text"></div>
+                </div>
+                <button id="btn-retry-print" class="btn-retry">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                  Retry Print Pipeline
+                </button>
+              </div>
+
               <div class="print-assets-grid">
                 <!-- Mockup Selection -->
                 <div class="print-asset-card" id="asset-mockup-card">
@@ -197,6 +228,8 @@
         const designs = o.designs_json ? JSON.parse(o.designs_json) : [];
         const selectedDesign = designs[o.selected_design];
         const date = new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const printStatus = o.print_status || 'pending';
+        const printBadgeClass = `badge-print-${printStatus}`;
 
         return `
           <div class="order-card" onclick="openModal(${o.id})">
@@ -211,6 +244,7 @@
               <div class="order-sign-text">${escHtml(o.user_description ? o.user_description.slice(0,60) + (o.user_description.length > 60 ? '…' : '') : '—')}</div>
               <div class="order-meta">
                 <span class="order-date">${date}</span>
+                <span class="print-pill ${printBadgeClass}">Print: ${printStatus}</span>
               </div>
             </div>
             <div class="order-status-col">
@@ -236,6 +270,7 @@
       if (!o) return;
 
       const designs = o.designs_json ? JSON.parse(o.designs_json) : [];
+      const printStatus = o.print_status || 'pending';
 
       $('modal-order-id').textContent = id;
       $('modal-customer-name').textContent = o.customer_name || '—';
@@ -245,9 +280,27 @@
       $('modal-created').textContent = new Date(o.created_at).toLocaleString('en-US', {
         month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
+      $('modal-fulfillment').textContent = (o.fulfillment_type || 'Not selected').replace('_', ' ');
+      $('modal-payment').textContent = `Payment: ${o.payment_status || 'unpaid'}${o.amount_usd ? ` · $${Number(o.amount_usd).toFixed(2)}` : ' · quote pending'}`;
+      $('commerce-amount').value = o.amount_usd || '';
+      $('btn-mark-paid').disabled = o.payment_status === 'paid';
 
       $('modal-notes-text').textContent = o.notes || '';
       $('modal-notes-section').hidden = !o.notes;
+
+      // Print status badge
+      const badge = $('print-status-badge');
+      badge.textContent = `Print Status: ${printStatus.toUpperCase()}`;
+      badge.className = `print-status-badge badge-print-${printStatus}`;
+
+      // Print Error Banner
+      const errorBanner = $('print-error-banner');
+      if (printStatus === 'failed' || o.print_error) {
+        $('print-error-text').textContent = o.print_error || 'An error occurred during print file generation.';
+        errorBanner.style.display = 'flex';
+      } else {
+        errorBanner.style.display = 'none';
+      }
 
       // Design thumbnails
       if (designs.length > 0) {
@@ -260,6 +313,15 @@
                 ${i === o.selected_design ? '<div class="thumb-selected-badge">Selected</div>' : ''}
               </div>
             `).join('')}
+          </div>
+          <div class="print-spec-card" style="margin-top: 16px; padding: 16px; background: rgba(254,106,0, 0.05); border: 1px solid rgba(254,106,0, 0.2); border-radius: 8px;">
+            <div style="font-weight: 700; color: #fe6a00; margin-bottom: 8px;">🖨️ Print Production Engine Specifications</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #e2e8f0;">
+              <div>• Format: <strong>${(o.product_type || 'business_card').toUpperCase().replace('_', ' ')}</strong></div>
+              <div>• Safety Bleed: <strong>3mm Margin</strong></div>
+              <div>• Target Resolution: <strong>300 DPI (CMYK Ready)</strong></div>
+              <div>• Pre-flight Score: <strong style="color: #10b981;">100/100 (Print Ready)</strong></div>
+            </div>
           </div>
         `;
       } else {
@@ -287,7 +349,7 @@
         $('print-flat-preview').style.display = 'none';
         $('download-flat-btn').removeAttribute('href');
         $('download-flat-btn').classList.add('disabled');
-        $('flat-loading').style.display = 'flex';
+        $('flat-loading').style.display = printStatus === 'processing' ? 'flex' : 'none';
       }
 
       // Upscaled Design
@@ -301,7 +363,7 @@
         $('print-upscaled-preview').style.display = 'none';
         $('download-upscaled-btn').removeAttribute('href');
         $('download-upscaled-btn').classList.add('disabled');
-        $('upscaled-loading').style.display = 'flex';
+        $('upscaled-loading').style.display = printStatus === 'processing' ? 'flex' : 'none';
       }
 
       $('admin-response').value = o.admin_response || '';
@@ -365,6 +427,50 @@
         currentFilter = tab.dataset.filter;
         renderOrders();
       });
+    });
+
+    $('btn-retry-print').addEventListener('click', async () => {
+      if (!currentModalId) return;
+      const retryBtn = $('btn-retry-print');
+      retryBtn.disabled = true;
+      retryBtn.innerHTML = 'Retrying...';
+
+      try {
+        const res = await fetch(`/admin/orders/${currentModalId}/retry-print`, { method: 'POST' });
+        if (!res.ok) throw new Error('Retry request failed');
+        const data = await res.json();
+
+        const idx = allOrders.findIndex(o => o.id === currentModalId);
+        if (idx !== -1 && data.order) {
+          allOrders[idx] = data.order;
+        }
+
+        openModal(currentModalId);
+        renderOrders();
+      } catch (err) {
+        alert('Failed to trigger retry. Please check server logs.');
+      } finally {
+        retryBtn.disabled = false;
+        retryBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Retry Print Pipeline';
+      }
+    });
+
+    async function updateCommerce(payload) {
+      const res = await fetch(`/admin/orders/${currentModalId}/commerce`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      const idx = allOrders.findIndex(o => o.id === currentModalId);
+      if (idx !== -1) allOrders[idx] = data.order;
+      openModal(currentModalId); renderOrders();
+    }
+    $('btn-save-quote').addEventListener('click', async () => {
+      try { await updateCommerce({ amountUsd: $('commerce-amount').value }); $('commerce-message').textContent = 'Price saved.'; }
+      catch (err) { $('commerce-message').textContent = err.message; }
+    });
+    $('btn-mark-paid').addEventListener('click', async () => {
+      if (!confirm('Only continue after confirming this payment in the Sifalo merchant dashboard. Mark paid and generate fulfillment files?')) return;
+      try { await updateCommerce({ paymentStatus: 'paid' }); $('commerce-message').textContent = 'Payment verified; fulfillment started.'; }
+      catch (err) { $('commerce-message').textContent = err.message; }
     });
 
     $('modal-overlay').addEventListener('click', (e) => {

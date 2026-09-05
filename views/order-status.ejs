@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Order #<%= order.id %> — SignPal</title>
+  <link rel="icon" href="/images/signpal-logo-640.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/css/design.css">
+</head>
+<body>
+  <%- include('partials/nav') %>
+  <main class="order-status-page">
+    <section class="order-status-card">
+      <div class="order-status-heading"><span>ORDER #<%= order.id %></span><h1>Your SignPal order</h1><p>Track payment, production and delivery from this private page.</p></div>
+      <div class="order-summary-grid">
+        <div class="order-thumb"><% if (selectedDesign) { %><img src="<%= selectedDesign.url %>" alt="Selected concept"><% } %></div>
+        <div class="order-facts">
+          <div><small>Product</small><strong><%= (order.product_type || 'Custom').replaceAll('_', ' ') %></strong></div>
+          <div><small>Fulfillment</small><strong><%= order.fulfillment_type === 'download' ? 'Design download' : 'Printed product' %></strong></div>
+          <div><small>Quantity</small><strong><%= order.quantity || 1 %></strong></div>
+          <div><small>Payment</small><strong id="payment-status"><%= order.payment_status %></strong></div>
+          <div><small>Amount</small><strong><%= order.amount_usd ? '$' + Number(order.amount_usd).toFixed(2) : 'Quote pending' %></strong></div>
+        </div>
+      </div>
+
+      <% if (order.payment_status !== 'paid' && order.amount_usd && paymentConfigured) { %>
+      <form id="pay-form" class="pay-form">
+        <h2>Pay securely with Sifalo Pay</h2>
+        <div class="form-row"><div class="form-group"><label for="gateway">Payment method</label><select id="gateway" name="gateway"><option value="zaad">ZAAD</option><option value="evc">EVC Plus</option><option value="edahab">eDahab</option><option value="sahal">SAHAL</option><option value="premier">Premier Wallet</option></select></div><div class="form-group"><label for="account">Mobile number</label><input id="account" name="account" type="tel" placeholder="+252…" required></div></div>
+        <button class="btn-primary" type="submit">Pay $<%= Number(order.amount_usd).toFixed(2) %></button><p id="pay-message" class="pay-message"></p>
+      </form>
+      <% } else if (!order.amount_usd) { %><div class="order-notice">Our production team is preparing your print quote. Nothing will enter production before you approve and pay.</div>
+      <% } else if (!paymentConfigured && order.payment_status !== 'paid') { %><div class="order-notice">Online payment setup is pending. Your order is safely saved and has not entered production.</div><% } %>
+
+      <% if (order.payment_status === 'paid' && order.fulfillment_type === 'download' && order.upscaled_design_url) { %><a class="btn-primary" href="<%= order.upscaled_design_url %>" download>Download paid design</a><% } %>
+    </section>
+  </main>
+  <script>
+    const form=document.getElementById('pay-form');
+    if(form) form.addEventListener('submit',async(e)=>{e.preventDefault();const button=form.querySelector('button');const message=document.getElementById('pay-message');button.disabled=true;message.textContent='Sending payment request…';try{const data=Object.fromEntries(new FormData(form));const res=await fetch('/api/orders/<%= order.public_token %>/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const body=await res.json();if(!res.ok)throw new Error(body.error||'Payment failed');message.textContent=body.message;document.getElementById('payment-status').textContent=body.status;}catch(err){message.textContent=err.message;}finally{button.disabled=false;}});
+  </script>
+</body></html>

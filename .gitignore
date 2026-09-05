@@ -5,6 +5,7 @@ node_modules/
 # Polsia safety (auto-injected)
 .env
 .env.*
+!.env.example
 .claude/
 .claude.json*
 .tmp/

@@ -4,13 +4,26 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const orders = require('../db/orders');
 const { buildThemeCSS } = require('../lib/landing-context');
+const { generateAndSavePrintFiles } = require('./customer');
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'signforge-admin';
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'signpal-local-only';
 
-// Simple Basic Auth check middleware
+if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_USER || !process.env.ADMIN_PASSWORD)) {
+  throw new Error('ADMIN_USER and ADMIN_PASSWORD are required in production');
+}
+
+function safeEqual(value, expected) {
+  const actualHash = crypto.createHash('sha256').update(String(value)).digest();
+  const expectedHash = crypto.createHash('sha256').update(String(expected)).digest();
+  return crypto.timingSafeEqual(actualHash, expectedHash);
+}
+
+// Timing-safe Basic Auth check middleware
 function adminAuth(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Basic ')) {
@@ -18,11 +31,24 @@ function adminAuth(req, res, next) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  const [username, password] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
-  if (username !== 'admin' || password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+  try {
+    const credentials = Buffer.from(auth.slice(6), 'base64').toString().split(':');
+    const inputUser = credentials[0] || '';
+    const inputPass = credentials[1] || '';
+
+    const userMatch = safeEqual(inputUser, ADMIN_USER);
+    const passMatch = safeEqual(inputPass, ADMIN_PASSWORD);
+
+    if (!userMatch || !passMatch) {
+      res.setHeader('WWW-Authenticate', 'Basic realm="SignPal Admin"');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    next();
+  } catch (err) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="SignPal Admin"');
+    return res.status(401).json({ error: 'Authentication failed' });
   }
-  next();
 }
 
 // Admin dashboard
@@ -65,6 +91,62 @@ router.patch('/admin/orders/:id', adminAuth, async (req, res) => {
   } catch (err) {
     console.error('Failed to update order:', err.message);
     res.status(500).json({ error: 'Failed to update order' });
+  }
+});
+
+// Retry print generation pipeline
+router.post('/admin/orders/:id/retry-print', adminAuth, async (req, res) => {
+  try {
+    const order = await orders.getOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    if (order.payment_status !== 'paid') {
+      return res.status(409).json({ error: 'Payment must be verified before production assets can be generated' });
+    }
+
+    const designs = order.designs_json ? JSON.parse(order.designs_json) : [];
+    const selectedIndex = order.selected_design !== null && order.selected_design !== undefined ? order.selected_design : 0;
+    const selectedDesign = designs[selectedIndex] || null;
+
+    // Trigger pipeline in background
+    generateAndSavePrintFiles(order.id, order.user_description || '', selectedDesign).catch(err => {
+      console.error(`[Admin Retry] Print pipeline failed for order ${order.id}:`, err.message);
+    });
+
+    // Mark as processing immediately
+    const updatedOrder = await orders.updatePrintStatus(order.id, 'processing', null);
+
+    res.json({ success: true, message: 'Print pipeline job triggered', order: updatedOrder });
+  } catch (err) {
+    console.error('Failed to retry print pipeline:', err.message);
+    res.status(500).json({ error: 'Failed to trigger retry' });
+  }
+});
+
+// Set a print quote or manually verify a Sifalo payment after checking the
+// merchant dashboard. This is the controlled fallback until signed webhooks
+// are enabled for the merchant account.
+router.patch('/admin/orders/:id/commerce', adminAuth, async (req, res) => {
+  try {
+    const existing = await orders.getOrderById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Order not found' });
+    let updated = existing;
+    if (req.body.amountUsd !== undefined) {
+      const amount = Number(req.body.amountUsd);
+      if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: 'Enter a valid amount' });
+      updated = await orders.setOrderAmount(existing.id, amount);
+    }
+    if (req.body.paymentStatus === 'paid' && existing.payment_status !== 'paid') {
+      updated = await orders.updatePayment(existing.id, { status: 'paid', provider: 'sifalo', reference: req.body.reference || 'manual-dashboard-verification' });
+      const designs = updated.designs_json ? JSON.parse(updated.designs_json) : [];
+      const chosen = designs[updated.selected_design] || null;
+      if (chosen) generateAndSavePrintFiles(updated.id, updated.user_description || '', chosen).catch(err => console.error('[Fulfillment] Asset generation failed:', err.message));
+    }
+    res.json({ success: true, order: updated });
+  } catch (err) {
+    console.error('Commerce update failed:', err.message);
+    res.status(500).json({ error: 'Failed to update payment details' });
   }
 });
 
