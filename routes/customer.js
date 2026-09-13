@@ -27,16 +27,43 @@ router.get('/api/pricing/estimate', (req, res) => {
 });
 
 router.get('/order/:token', async (req, res) => {
-  const order = await orders.getOrderByToken(req.params.token);
-  if (!order) return res.status(404).send('Order not found');
-  const designs = order.designs_json ? JSON.parse(order.designs_json) : [];
-  res.render('order-status', { order, selectedDesign: designs[order.selected_design] || null, paymentConfigured: payments.isConfigured() });
+  try {
+    const order = await orders.getOrderByToken(req.params.token);
+    if (!order) return res.status(404).send('Order not found');
+    const designs = order.designs_json ? JSON.parse(order.designs_json) : [];
+    res.render('order-status', { order, selectedDesign: designs[order.selected_design] || null, paymentConfigured: payments.isConfigured() });
+  } catch (err) {
+    console.error('Failed to load order:', err.message);
+    res.status(500).send('Database connection error. Please verify PostgreSQL is running.');
+  }
+});
+
+router.get('/order/:token/ticket', async (req, res) => {
+  try {
+    const order = await orders.getOrderByToken(req.params.token);
+    if (!order) return res.status(404).send('Order not found');
+
+    const { getPrintSpec, getMaterialFinishingSpec } = require('../lib/print-engine');
+    const spec = getPrintSpec(order.product_type || 'business_card');
+    const material = getMaterialFinishingSpec(order.product_type || 'business_card', order.user_description || '');
+    const designs = order.designs_json ? JSON.parse(order.designs_json) : [];
+
+    res.render('job-ticket', { order, spec, material, designs });
+  } catch (err) {
+    console.error('Failed to load job ticket:', err.message);
+    res.status(500).send('Database connection error. Please verify PostgreSQL is running.');
+  }
 });
 
 router.get('/api/orders/:token/status', async (req, res) => {
-  const order = await orders.getOrderByToken(req.params.token);
-  if (!order) return res.status(404).json({ error: 'Order not found' });
-  res.json({ orderId: order.id, status: order.status, paymentStatus: order.payment_status, printStatus: order.print_status, amountUsd: order.amount_usd, fulfillmentType: order.fulfillment_type, downloadUrl: order.payment_status === 'paid' && order.fulfillment_type === 'download' ? order.upscaled_design_url : null });
+  try {
+    const order = await orders.getOrderByToken(req.params.token);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json({ orderId: order.id, status: order.status, paymentStatus: order.payment_status, printStatus: order.print_status, amountUsd: order.amount_usd, fulfillmentType: order.fulfillment_type, downloadUrl: order.payment_status === 'paid' && order.fulfillment_type === 'download' ? order.upscaled_design_url : null });
+  } catch (err) {
+    console.error('Failed to check order status:', err.message);
+    res.status(500).json({ error: 'Database connection error' });
+  }
 });
 
 router.post('/api/orders/:token/pay', async (req, res) => {
@@ -79,9 +106,9 @@ router.post('/api/brands', async (req, res) => {
   }
 });
 
-// Generate 3 AI designs from freeform description + optional images + Brand DNA
+// Generate 3 AI designs from freeform description + optional images + Brand DNA + presets
 router.post('/api/generate', async (req, res) => {
-  const { description, images, brandId, productType, languages } = req.body;
+  const { description, images, brandId, productType, languages, industry, stylePreset } = req.body;
 
   if (!description || !description.trim()) {
     return res.status(400).json({ error: 'A description is required' });
@@ -114,16 +141,22 @@ router.post('/api/generate', async (req, res) => {
   try {
     const selectedProduct = getProduct(productType);
     const productDescription = `${selectedProduct.name} (${selectedProduct.format}). ${description.trim()}`;
-    const designs = await generateDesigns({
+    const result = await generateDesigns({
       description: productDescription,
       imageBuffers,
       brandDna,
       productType: selectedProduct.id,
-      languages: languages || 'English + Somali'
+      languages: languages || 'English + Somali',
+      industry: industry || null,
+      stylePreset: stylePreset || null
     });
 
+    const designs = Array.isArray(result) ? result : result.designs;
+    const brief = result.brief || null;
     const printSpec = getPrintSpec(selectedProduct.id);
-    res.json({ designs, printSpec, product: selectedProduct });
+    const preflight = evaluatePreflightQuality({ productType: selectedProduct.id, hasHighRes: true, hasFlatArt: true, brief });
+
+    res.json({ designs, brief, printSpec, preflight, product: selectedProduct });
   } catch (err) {
     console.error('AI generation failed:', err.message);
     res.status(500).json({ error: 'Design generation failed. Please try again.' });

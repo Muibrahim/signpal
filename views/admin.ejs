@@ -17,24 +17,112 @@
   <main class="admin-main">
     <div class="admin-container">
 
+      <!-- Factory Floor KPI Bar -->
+      <div class="kpi-bar">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Work Orders</span>
+          <span class="kpi-value" id="kpi-total-orders">0</span>
+          <span class="kpi-sub">All active & completed jobs</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">RIP & Press Queue</span>
+          <span class="kpi-value" id="kpi-rip-orders" style="color: var(--cyan);">0</span>
+          <span class="kpi-sub">Ready for print rasterization</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Finishing & Assembly</span>
+          <span class="kpi-value" id="kpi-finishing-orders" style="color: var(--brand-orange);">0</span>
+          <span class="kpi-sub">Lamination, eyelets & 3D fab</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Factory Revenue</span>
+          <span class="kpi-value" id="kpi-revenue" style="color: #4ade80;">$0</span>
+          <span class="kpi-sub">Reconciled Sifalo volume</span>
+        </div>
+      </div>
+
       <div class="admin-header">
         <div>
-          <h1 class="admin-title">Order Management</h1>
-          <p class="admin-subtitle">Review incoming orders and respond to customers.</p>
+          <h1 class="admin-title">Factory Floor & Order Management</h1>
+          <p class="admin-subtitle">Real-time Prepress RIP pipeline, shop floor Kanban & mobile money reconciliation.</p>
         </div>
         <div class="admin-actions">
-          <div class="filter-tabs">
-            <button class="filter-tab active" data-filter="all">All</button>
-            <button class="filter-tab" data-filter="pending">Pending</button>
-            <button class="filter-tab" data-filter="in_progress">In Progress</button>
-            <button class="filter-tab" data-filter="completed">Completed</button>
+          <div class="view-switcher">
+            <button type="button" class="view-btn active" id="view-btn-kanban" onclick="switchAdminView('kanban')">
+              📋 Factory Kanban
+            </button>
+            <button type="button" class="view-btn" id="view-btn-list" onclick="switchAdminView('list')">
+              📄 Table List
+            </button>
           </div>
+          <a href="/admin/orders/export/csv" class="btn-export-csv" title="Download factory manifest for batch production">
+            📥 Export CSV Manifest
+          </a>
           <span id="order-count" class="order-count">Loading...</span>
         </div>
       </div>
 
-      <div id="orders-list" class="orders-list">
-        <div class="loading-state">Loading orders...</div>
+      <!-- 1. Factory Floor Kanban Board -->
+      <div id="kanban-view" class="kanban-board">
+        <!-- Col 1: Preflight & Queue -->
+        <div class="kanban-col" id="col-pending">
+          <div class="kanban-col-head">
+            <span class="kanban-col-title">📥 1. Preflight</span>
+            <span class="kanban-count-badge" id="count-pending">0</span>
+          </div>
+          <div class="kanban-cards-wrap" id="cards-pending"></div>
+        </div>
+
+        <!-- Col 2: RIP & Press Queue -->
+        <div class="kanban-col" id="col-rip">
+          <div class="kanban-col-head">
+            <span class="kanban-col-title">🖨️ 2. RIP Queue</span>
+            <span class="kanban-count-badge" id="count-rip">0</span>
+          </div>
+          <div class="kanban-cards-wrap" id="cards-rip"></div>
+        </div>
+
+        <!-- Col 3: Press & Fabrication -->
+        <div class="kanban-col" id="col-progress">
+          <div class="kanban-col-head">
+            <span class="kanban-col-title">⚙️ 3. Press / Fab</span>
+            <span class="kanban-count-badge" id="count-progress">0</span>
+          </div>
+          <div class="kanban-cards-wrap" id="cards-progress"></div>
+        </div>
+
+        <!-- Col 4: Finishing & QC -->
+        <div class="kanban-col" id="col-finishing">
+          <div class="kanban-col-head">
+            <span class="kanban-col-title">✂️ 4. Finishing</span>
+            <span class="kanban-count-badge" id="count-finishing">0</span>
+          </div>
+          <div class="kanban-cards-wrap" id="cards-finishing"></div>
+        </div>
+
+        <!-- Col 5: Delivery & Fulfillment -->
+        <div class="kanban-col" id="col-delivery">
+          <div class="kanban-col-head">
+            <span class="kanban-col-title">🚚 5. Dispatched</span>
+            <span class="kanban-count-badge" id="count-delivery">0</span>
+          </div>
+          <div class="kanban-cards-wrap" id="cards-delivery"></div>
+        </div>
+      </div>
+
+      <!-- 2. Traditional List View -->
+      <div id="orders-list-view" hidden>
+        <div class="filter-tabs" style="margin-bottom: 16px;">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="pending">Pending</button>
+          <button class="filter-tab" data-filter="rip_queue">RIP Queue</button>
+          <button class="filter-tab" data-filter="in_progress">In Progress</button>
+          <button class="filter-tab" data-filter="finishing">Finishing</button>
+          <button class="filter-tab" data-filter="completed">Completed</button>
+        </div>
+        <div id="orders-list" class="orders-list">
+          <div class="loading-state">Loading orders...</div>
+        </div>
       </div>
 
       <!-- Order Detail Modal -->
@@ -76,7 +164,14 @@
 
             <div class="modal-response-section commerce-controls">
               <label class="info-label" for="commerce-amount">Quote / design fee (USD)</label>
-              <div class="commerce-row"><input id="commerce-amount" type="number" min="0.01" step="0.01" placeholder="Amount"><button id="btn-save-quote" class="btn-download" type="button">Save price</button><button id="btn-mark-paid" class="btn-save" type="button">Verify paid & fulfill</button></div>
+              <div class="commerce-row">
+                <input id="commerce-amount" type="number" min="0.01" step="0.01" placeholder="Amount">
+                <button id="btn-save-quote" class="btn-download" type="button">Save price</button>
+                <button id="btn-mark-paid" class="btn-save" type="button">Verify paid & fulfill</button>
+                <a id="btn-view-job-ticket" href="" target="_blank" class="btn-download" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                  📄 Open Prepress Job Ticket
+                </a>
+              </div>
               <span id="commerce-message" class="save-status"></span>
             </div>
 
@@ -186,10 +281,21 @@
 
   <script>
     const STATUS_LABELS = {
-      pending: 'Pending',
-      in_progress: 'In Progress',
+      pending: 'Preflight & Queue',
+      rip_queue: 'RIP & Plate Prep',
+      in_progress: 'In Press / Fab',
+      finishing: 'Finishing & QC',
+      out_for_delivery: 'Dispatched',
       completed: 'Completed',
       rejected: 'Rejected',
+    };
+
+    const NEXT_STAGE_MAP = {
+      pending: { next: 'rip_queue', label: '→ Send to RIP' },
+      rip_queue: { next: 'in_progress', label: '→ Start Press' },
+      in_progress: { next: 'finishing', label: '→ Send Finishing' },
+      finishing: { next: 'out_for_delivery', label: '→ Dispatch Rider' },
+      out_for_delivery: { next: 'completed', label: '✓ Mark Complete' }
     };
 
     let allOrders = [];
@@ -197,6 +303,14 @@
     let currentModalId = null;
 
     function $(id) { return document.getElementById(id); }
+
+    function switchAdminView(view) {
+      $('kanban-view').hidden = view !== 'kanban';
+      $('orders-list-view').hidden = view !== 'list';
+      $('view-btn-kanban').classList.toggle('active', view === 'kanban');
+      $('view-btn-list').classList.toggle('active', view === 'list');
+      localStorage.setItem('signpal_admin_view', view);
+    }
 
     async function loadOrders() {
       try {
@@ -211,16 +325,107 @@
     }
 
     function renderOrders() {
+      // 1. Calculate and update KPI summaries
+      const totalOrders = allOrders.length;
+      const ripOrders = allOrders.filter(o => o.status === 'rip_queue').length;
+      const finishingOrders = allOrders.filter(o => o.status === 'finishing' || o.status === 'in_progress').length;
+      const totalRevenue = allOrders
+        .filter(o => o.payment_status === 'paid')
+        .reduce((sum, o) => sum + (Number(o.amount_usd) || 0), 0);
+
+      $('kpi-total-orders').textContent = totalOrders;
+      $('kpi-rip-orders').textContent = ripOrders;
+      $('kpi-finishing-orders').textContent = finishingOrders;
+      $('kpi-revenue').textContent = `$${totalRevenue.toFixed(2)}`;
+      $('order-count').textContent = `${totalOrders} order${totalOrders !== 1 ? 's' : ''}`;
+
+      // 2. Render Kanban Columns
+      renderKanban();
+
+      // 3. Render Traditional List View
+      renderListView();
+    }
+
+    function renderKanban() {
+      const colCards = {
+        pending: $('cards-pending'),
+        rip: $('cards-rip'),
+        progress: $('cards-progress'),
+        finishing: $('cards-finishing'),
+        delivery: $('cards-delivery')
+      };
+
+      const counts = { pending: 0, rip: 0, progress: 0, finishing: 0, delivery: 0 };
+      Object.values(colCards).forEach(el => { if (el) el.innerHTML = ''; });
+
+      allOrders.forEach(o => {
+        let colKey = 'pending';
+        if (o.status === 'rip_queue') colKey = 'rip';
+        else if (o.status === 'in_progress') colKey = 'progress';
+        else if (o.status === 'finishing') colKey = 'finishing';
+        else if (o.status === 'out_for_delivery' || o.status === 'completed') colKey = 'delivery';
+
+        counts[colKey]++;
+
+        const targetCol = colCards[colKey];
+        if (!targetCol) return;
+
+        const designs = o.designs_json ? JSON.parse(o.designs_json) : [];
+        const chosen = designs[o.selected_design] || null;
+        const thumbUrl = chosen ? (chosen.url || chosen) : (o.upscaled_design_url || o.flat_design_url || '');
+        const productName = (o.product_type || 'Print Product').replace(/_/g, ' ');
+        const isPaid = o.payment_status === 'paid';
+        const nextStage = NEXT_STAGE_MAP[o.status];
+
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.onclick = () => openModal(o.id);
+
+        card.innerHTML = `
+          <div class="kcard-top">
+            <span class="kcard-id">#${o.id}</span>
+            <span class="kcard-payment ${isPaid ? 'kpay-paid' : 'kpay-unpaid'}">
+              ${isPaid ? '✓ PAID' : 'UNPAID'}
+            </span>
+          </div>
+          <div class="kcard-main">
+            ${thumbUrl ? `<img src="${thumbUrl}" alt="Thumbnail" class="kcard-thumb">` : `<div class="kcard-no-thumb">📦</div>`}
+            <div class="kcard-details">
+              <strong>${escHtml(productName)}</strong>
+              <small>${escHtml(o.customer_name || 'Customer')}</small>
+              <small style="color:var(--brand-orange)">${escHtml(o.customer_phone || '')}</small>
+            </div>
+          </div>
+          <div class="kcard-footer">
+            <span class="kcard-qty">${o.quantity || 1} unit(s)</span>
+            <span class="kcard-price">$${Number(o.amount_usd || 0).toFixed(2)}</span>
+          </div>
+          <div class="kcard-actions" onclick="event.stopPropagation()">
+            ${nextStage ? `<button type="button" class="btn-kcard btn-kcard-advance" onclick="advanceStage(${o.id}, '${nextStage.next}')">${nextStage.label}</button>` : ''}
+            <a href="/admin/orders/${o.id}/ticket" target="_blank" class="btn-kcard" title="Open Prepress Job Ticket">📄 Ticket</a>
+            <button type="button" class="btn-kcard" onclick="dispatchFloorWhatsApp(${o.id})" title="Dispatch to Floor Manager">📲 WhatsApp</button>
+          </div>
+        `;
+        targetCol.appendChild(card);
+      });
+
+      $('count-pending').textContent = counts.pending;
+      $('count-rip').textContent = counts.rip;
+      $('count-progress').textContent = counts.progress;
+      $('count-finishing').textContent = counts.finishing;
+      $('count-delivery').textContent = counts.delivery;
+    }
+
+    function renderListView() {
       const list = $('orders-list');
+      if (!list) return;
 
       const filtered = currentFilter === 'all'
         ? allOrders
         : allOrders.filter(o => o.status === currentFilter);
 
-      $('order-count').textContent = `${filtered.length} order${filtered.length !== 1 ? 's' : ''}`;
-
       if (filtered.length === 0) {
-        list.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><br>No orders yet — waiting for customers to submit designs.<br><span style="font-size:0.8rem;opacity:0.6;margin-top:4px;display:inline-block">Share your design tool link to get started.</span></div>';
+        list.innerHTML = '<div class="empty-state">No matching orders in this filter.</div>';
         return;
       }
 
@@ -235,13 +440,13 @@
           <div class="order-card" onclick="openModal(${o.id})">
             <div class="order-design">
               ${selectedDesign
-                ? `<img src="${selectedDesign.url}" alt="Selected design">`
+                ? `<img src="${selectedDesign.url || selectedDesign}" alt="Selected design">`
                 : '<div class="no-design">No design</div>'
               }
             </div>
             <div class="order-info">
-              <div class="order-name">${escHtml(o.customer_name)}</div>
-              <div class="order-sign-text">${escHtml(o.user_description ? o.user_description.slice(0,60) + (o.user_description.length > 60 ? '…' : '') : '—')}</div>
+              <div class="order-name">${escHtml(o.customer_name)} · #${o.id}</div>
+              <div class="order-sign-text">${escHtml(o.product_type || 'Print Product')}: ${escHtml(o.user_description ? o.user_description.slice(0,60) + (o.user_description.length > 60 ? '…' : '') : '—')}</div>
               <div class="order-meta">
                 <span class="order-date">${date}</span>
                 <span class="print-pill ${printBadgeClass}">Print: ${printStatus}</span>
@@ -251,11 +456,41 @@
               <span class="order-status-badge status-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>
             </div>
             <div class="order-email-col">
-              <a href="mailto:${escHtml(o.customer_email)}" class="order-email" onclick="event.stopPropagation()">${escHtml(o.customer_email)}</a>
+              <a href="/admin/orders/${o.id}/ticket" target="_blank" class="btn-download" style="text-decoration:none; padding:4px 8px; font-size:0.75rem;" onclick="event.stopPropagation()">📄 Ticket</a>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    async function advanceStage(id, nextStatus) {
+      try {
+        const res = await fetch(`/admin/orders/${id}/kanban`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus })
+        });
+        if (!res.ok) throw new Error('Failed to advance stage');
+        const data = await res.json();
+        const idx = allOrders.findIndex(o => o.id === id);
+        if (idx !== -1) allOrders[idx] = data.order;
+        renderOrders();
+      } catch (err) {
+        alert('Could not advance production stage: ' + err.message);
+      }
+    }
+
+    function dispatchFloorWhatsApp(id) {
+      const o = allOrders.find(x => x.id === id);
+      if (!o) return;
+      const host = window.location.origin;
+      const msg = `🚨 DALABKA WARSHADDA: Order #${o.id}
+Alaabta: ${(o.product_type || 'Custom').replace(/_/g, ' ')} (${o.quantity || 1} pcs)
+Macmiilka: ${o.customer_name || 'Customer'} (${o.customer_phone || 'N/A'})
+Qiimaha: $${Number(o.amount_usd || 0).toFixed(2)} (${o.payment_status === 'paid' ? 'PAID' : 'UNPAID'})
+Prepress Ticket: ${host}/admin/orders/${o.id}/ticket`;
+
+      window.open(`https://wa.me/252634226437?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
     function escHtml(str) {
@@ -284,6 +519,7 @@
       $('modal-payment').textContent = `Payment: ${o.payment_status || 'unpaid'}${o.amount_usd ? ` · $${Number(o.amount_usd).toFixed(2)}` : ' · quote pending'}`;
       $('commerce-amount').value = o.amount_usd || '';
       $('btn-mark-paid').disabled = o.payment_status === 'paid';
+      $('btn-view-job-ticket').href = `/admin/orders/${id}/ticket`;
 
       $('modal-notes-text').textContent = o.notes || '';
       $('modal-notes-section').hidden = !o.notes;
@@ -309,19 +545,10 @@
           <div class="modal-design-grid">
             ${designs.map((d, i) => `
               <div class="modal-design-thumb ${i === o.selected_design ? 'selected' : ''}">
-                <img src="${d.url}" alt="Design ${i + 1}">
+                <img src="${d.url || d}" alt="Design ${i + 1}">
                 ${i === o.selected_design ? '<div class="thumb-selected-badge">Selected</div>' : ''}
               </div>
             `).join('')}
-          </div>
-          <div class="print-spec-card" style="margin-top: 16px; padding: 16px; background: rgba(254,106,0, 0.05); border: 1px solid rgba(254,106,0, 0.2); border-radius: 8px;">
-            <div style="font-weight: 700; color: #fe6a00; margin-bottom: 8px;">🖨️ Print Production Engine Specifications</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #e2e8f0;">
-              <div>• Format: <strong>${(o.product_type || 'business_card').toUpperCase().replace('_', ' ')}</strong></div>
-              <div>• Safety Bleed: <strong>3mm Margin</strong></div>
-              <div>• Target Resolution: <strong>300 DPI (CMYK Ready)</strong></div>
-              <div>• Pre-flight Score: <strong style="color: #10b981;">100/100 (Print Ready)</strong></div>
-            </div>
           </div>
         `;
       } else {
@@ -331,8 +558,8 @@
       // Populate print assets section
       const selectedDesign = designs[o.selected_design];
       if (selectedDesign) {
-        $('print-mockup-preview').src = selectedDesign.url;
-        $('download-mockup-btn').href = selectedDesign.url;
+        $('print-mockup-preview').src = selectedDesign.url || selectedDesign;
+        $('download-mockup-btn').href = selectedDesign.url || selectedDesign;
         $('asset-mockup-card').style.display = '';
       } else {
         $('asset-mockup-card').style.display = 'none';
@@ -476,6 +703,12 @@
     $('modal-overlay').addEventListener('click', (e) => {
       if (e.target === $('modal-overlay')) closeModal();
     });
+
+    // Check saved view preference
+    try {
+      const savedView = localStorage.getItem('signpal_admin_view');
+      if (savedView === 'list') switchAdminView('list');
+    } catch (_) {}
 
     loadOrders();
   </script>

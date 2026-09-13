@@ -150,4 +150,111 @@ router.patch('/admin/orders/:id/commerce', adminAuth, async (req, res) => {
   }
 });
 
+// Prepress RIP Production Job Ticket View
+router.get('/admin/orders/:id/ticket', adminAuth, async (req, res) => {
+  try {
+    const order = await orders.getOrderById(req.params.id);
+    if (!order) return res.status(404).send('Order not found');
+
+    const { getPrintSpec, getMaterialFinishingSpec } = require('../lib/print-engine');
+    const spec = getPrintSpec(order.product_type || 'business_card');
+    const material = getMaterialFinishingSpec(order.product_type || 'business_card', order.user_description || '');
+    const designs = order.designs_json ? JSON.parse(order.designs_json) : [];
+
+    res.render('job-ticket', { order, spec, material, designs });
+  } catch (err) {
+    console.error('Failed to generate job ticket:', err.message);
+    res.status(500).send('Error generating job ticket');
+  }
+});
+
+// CSV Export for Factory Floor Batch Scheduling
+router.get('/admin/orders/export/csv', adminAuth, async (_req, res) => {
+  try {
+    const all = await orders.getOrders();
+    const { getPrintSpec, getMaterialFinishingSpec } = require('../lib/print-engine');
+
+    const headers = [
+      'Order ID',
+      'Date',
+      'Customer Name',
+      'Phone',
+      'Email',
+      'Product',
+      'Quantity',
+      'Trim Width (mm)',
+      'Trim Height (mm)',
+      'Bleed (mm)',
+      'Target DPI',
+      'Substrate',
+      'Ink System',
+      'Finishing',
+      'Amount USD',
+      'Payment Status',
+      'Payment Provider',
+      'Payment Reference',
+      'Production Status',
+      'High-Res Print File URL'
+    ];
+
+    const rows = all.map(o => {
+      const spec = getPrintSpec(o.product_type || 'business_card');
+      const mat = getMaterialFinishingSpec(o.product_type || 'business_card', o.user_description || '');
+      const escapeCsv = (val) => `"${String(val || '').replaceAll('"', '""').replaceAll('\n', ' ')}"`;
+
+      return [
+        o.id,
+        o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : '',
+        escapeCsv(o.customer_name),
+        escapeCsv(o.customer_phone),
+        escapeCsv(o.customer_email),
+        escapeCsv(spec.name),
+        o.quantity || 1,
+        spec.widthMm || 'Custom',
+        spec.heightMm || 'Custom',
+        spec.bleedMm || 3,
+        spec.dpi || 300,
+        escapeCsv(mat.substrate),
+        escapeCsv(mat.inkSystem),
+        escapeCsv(mat.finishing),
+        o.amount_usd || '0.00',
+        escapeCsv(o.payment_status),
+        escapeCsv(o.payment_provider),
+        escapeCsv(o.payment_reference),
+        escapeCsv(o.status),
+        escapeCsv(o.upscaled_design_url || o.flat_design_url || '')
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=signpal-production-manifest-${dateStr}.csv`);
+    res.send(csvContent);
+  } catch (err) {
+    console.error('Failed to export orders CSV:', err.message);
+    res.status(500).json({ error: 'Failed to export CSV' });
+  }
+});
+
+// Update order Kanban stage
+router.patch('/admin/orders/:id/kanban', adminAuth, async (req, res) => {
+  const { status } = req.body;
+  const validStatuses = ['pending', 'rip_queue', 'in_progress', 'finishing', 'out_for_delivery', 'completed', 'rejected'];
+
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid production status' });
+  }
+
+  try {
+    const updated = await orders.updateOrderStatus(req.params.id, status);
+    if (!updated) return res.status(404).json({ error: 'Order not found' });
+    res.json({ success: true, order: updated });
+  } catch (err) {
+    console.error('Failed to update kanban status:', err.message);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
 module.exports = router;

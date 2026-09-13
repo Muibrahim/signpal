@@ -51,11 +51,11 @@ Output should look like a real printed/mounted design piece.`;
  * Converts user description + Brand DNA into a disciplined, structured JSON brief
  * before generating image model prompts.
  */
-async function analyzeBrandBrief({ description, brandDna, productType = 'business_card', languages = 'English + Somali' }) {
+async function analyzeBrandBrief({ description, brandDna, productType = 'business_card', languages = 'English + Somali', industry = null, stylePreset = null }) {
   const openai = getClient();
 
   const systemPrompt = `You are an expert Brand Strategist and Art Director.
-Parse the user's design request and Brand DNA into a structured JSON brand brief.
+Parse the user's design request, selected industry, style preset, and Brand DNA into a structured JSON brand brief.
 
 Return ONLY a JSON object with this exact schema:
 {
@@ -85,6 +85,8 @@ Return ONLY a JSON object with this exact schema:
 
   try {
     const userPayload = `Description: "${description}"
+Industry Preset: "${industry || 'Not specified'}"
+Style Preset: "${stylePreset || 'Modern & Balanced'}"
 Languages: "${languages}"
 Product Type: "${productType}"
 Brand DNA: ${JSON.stringify(brandDna || {})}`;
@@ -115,14 +117,14 @@ Brand DNA: ${JSON.stringify(brandDna || {})}`;
  * All three options generate distinct 2D concepts. Mockups are a separate
  * post-selection stage and must never consume one of the concept slots.
  */
-async function enhancePromptWithLLM({ description, variant = 1, isFlat, hasReferences = false, brandDna, productType = 'business_card', languages = 'English + Somali', brief = null }) {
+async function enhancePromptWithLLM({ description, variant = 1, isFlat, hasReferences = false, brandDna, productType = 'business_card', languages = 'English + Somali', brief = null, industry = null, stylePreset = null }) {
   const openai = getClient();
   const { getPrintSpec } = require('../lib/print-engine');
   const printSpec = getPrintSpec(productType);
 
   // If brief wasn't pre-analyzed, run analysis now
   if (!brief) {
-    brief = await analyzeBrandBrief({ description, brandDna, productType, languages });
+    brief = await analyzeBrandBrief({ description, brandDna, productType, languages, industry, stylePreset });
   }
 
   const forceFlat = isFlat !== undefined ? isFlat : true;
@@ -142,7 +144,8 @@ async function enhancePromptWithLLM({ description, variant = 1, isFlat, hasRefer
 
   const brandContext = `
 STRUCTURED BRAND BRIEF:
-- Industry: ${brief?.industry || brandDna?.industry || 'Commercial Branding'}
+- Industry: ${industry || brief?.industry || brandDna?.industry || 'Commercial Branding'}
+- Style Preset: ${stylePreset || 'Balanced Modern'}
 - Personality: ${brief?.brand_personality?.join(', ') || 'Professional, Premium'}
 - Keywords: ${brief?.keywords?.join(', ') || 'Clean, Modern'}
 - 5-Color System: Primary (${colors.primary}), Secondary (${colors.secondary}), Accent (${colors.accent}), Background (${colors.background}), Text (${colors.text})
@@ -155,9 +158,30 @@ STRUCTURED BRAND BRIEF:
     3: `CONCEPT C — Distinctive brand expression. Use a centered or emblem-led composition, culturally appropriate visual detail and a refined typography pairing. Do not reuse the grid, graphic device, background treatment or color distribution of Concepts A or B.`,
   };
 
-  const formatType = forceFlat
-    ? `Production graphic design artwork canvas for physical printing. Exact aspect ratio ${printSpec.aspectRatio} (${printSpec.widthMm}x${printSpec.heightMm}mm format). Front-facing 2D orthographic canvas view with rich textured background and geometric framing accents. Strictly ZERO 3D roll-up banner stand mechanisms, ZERO floor tiles, ZERO wall/desk surfaces, ZERO drop shadows on stand hardware.`
-    : `Professional photorealistic 3D physical showcase render of ${printSpec.name} print media in a real-world environment.`;
+  let formatType = '';
+  const isSignage = ['shop_sign', 'three_d_letters', 'illuminated_sign', 'neon_sign', 'acrylic_sign', 'pylon_sign', 'cladding_sign'].includes(productType);
+  const isVehicle = ['bajaaj_wrap', 'vehicle_wrap', 'vehicle_decal'].includes(productType);
+  const isCorporateBundle = productType === 'corporate_bundle';
+
+  if (isSignage) {
+    formatType = forceFlat
+      ? `Architectural signage fabrication blueprint elevation. Scale aspect ratio ${printSpec.aspectRatio} (${printSpec.widthMm}x${printSpec.heightMm}mm format). Perpendicular 2D elevation drawing showing letter profiles, illuminated acrylic face contours, aluminum returns, LED halo glows, and alucobond composite cladding background with precise mounting guide lines.`
+      : `High-end architectural photorealistic render of an upscale commercial building storefront facade at dusk. Glowing 3D illuminated channel letters mounted on dark textured alucobond cladding, warm ambient LED halo backlighting, realistic glass storefront reflections and crisp signage fabrication.`;
+  } else if (isVehicle) {
+    formatType = forceFlat
+      ? `Commercial vehicle wrap template flat layout. Aspect ratio ${printSpec.aspectRatio} (${printSpec.widthMm}x${printSpec.heightMm}mm). Flat orthographic side panels, front hood, and rear section graphics with 20mm bleed margin, high-resolution vector brand decals, and clear window/door trim lines.`
+      : productType === 'bajaaj_wrap'
+        ? `Photorealistic 3D automotive render of a custom-wrapped Bajaaj (three-wheeled auto-rickshaw) parked in front of a modern urban commercial street. Full glossy automotive vinyl wrap featuring vibrant branded livery, sharp typography, and high-impact visual graphics.`
+        : `Photorealistic 3D commercial vehicle fleet wrap render of a branded commercial delivery van/vehicle in a sleek urban showroom setting with glossy reflective vinyl finish.`;
+  } else if (isCorporateBundle) {
+    formatType = forceFlat
+      ? `Corporate Identity Suite presentation sheet (${printSpec.widthMm}x${printSpec.heightMm}mm). 2D orthographic canvas containing matching business card (85x55mm), A4 corporate letterhead, CR80 employee ID badge with lanyard, and trade show rollup banner (800x2000mm) laid out on a synchronized brand grid with 5mm bleed.`
+      : `Photorealistic isometric corporate brand identity stationery mockup arranged on a premium dark textured slate desktop, featuring luxury embossed business cards, gold foil letterhead, branded PVC ID card with lanyard, and miniature display banner.`;
+  } else {
+    formatType = forceFlat
+      ? `Production graphic design artwork canvas for physical printing. Exact aspect ratio ${printSpec.aspectRatio} (${printSpec.widthMm}x${printSpec.heightMm}mm format). Front-facing 2D orthographic canvas view with rich textured background and geometric framing accents. Strictly ZERO 3D roll-up banner stand mechanisms, ZERO floor tiles, ZERO wall/desk surfaces, ZERO drop shadows on stand hardware.`
+      : `Professional photorealistic 3D physical showcase render of ${printSpec.name} print media in a real-world environment.`;
+  }
 
   const systemPrompt = `You are a Senior Art Director and Master Graphic Designer specializing in print branding, signage, business cards, posters, banners, and visual identity.
 Your job is to transform a customer's raw design request into an expert graphic design image prompt for an image generation model.
@@ -211,24 +235,24 @@ Output ONLY the final image prompt text. Do not include markdown tags, conversat
   return buildDesignPrompt({ description, imageBuffers: hasReferences ? [1] : [], variant });
 }
 
-async function generateDesigns({ description, imageBuffers, brandDna, productType = 'business_card', languages = 'English + Somali' }) {
+async function generateDesigns({ description, imageBuffers, brandDna, productType = 'business_card', languages = 'English + Somali', industry = null, stylePreset = null }) {
   const openai = getClient();
   const hasReferences = Array.isArray(imageBuffers) && imageBuffers.length > 0;
   const printSpec = getPrintSpec(productType);
 
   // Step 1: Pre-analyze Brand Brief into structured JSON object
-  const brief = await analyzeBrandBrief({ description, brandDna, productType, languages });
+  const brief = await analyzeBrandBrief({ description, brandDna, productType, languages, industry, stylePreset });
 
   const variantConfigs = [
-    { id: 1, label: 'Concept A · Structured', isFlat: true },
-    { id: 2, label: 'Concept B · Editorial', isFlat: true },
-    { id: 3, label: 'Concept C · Distinctive', isFlat: true }
+    { id: 1, label: 'Concept A · Structured', isFlat: true, styleDesc: 'Disciplined Grid & Typographic Balance' },
+    { id: 2, label: 'Concept B · Editorial', isFlat: true, styleDesc: 'Dynamic Scale Contrast & Geometry' },
+    { id: 3, label: 'Concept C · Distinctive', isFlat: true, styleDesc: 'Emblem-Led Premium Identity' }
   ];
 
   // Run all 3 design variants in parallel for maximum performance
   const variantPromises = variantConfigs.map(async (cfg) => {
     // Layer 1: Prompt Structuring LLM consuming structured brief
-    const prompt = await enhancePromptWithLLM({ description, variant: cfg.id, isFlat: cfg.isFlat, hasReferences, brandDna, productType, languages, brief });
+    const prompt = await enhancePromptWithLLM({ description, variant: cfg.id, isFlat: cfg.isFlat, hasReferences, brandDna, productType, languages, brief, industry, stylePreset });
     let url = null;
     let lastError;
 
@@ -269,10 +293,13 @@ async function generateDesigns({ description, imageBuffers, brandDna, productTyp
       throw lastError || new Error(`Image generation failed for variant ${cfg.id}`);
     }
 
-    return { id: cfg.id, url, prompt, isFlat: cfg.isFlat, label: cfg.label };
+    return { id: cfg.id, url, prompt, isFlat: cfg.isFlat, label: cfg.label, styleDesc: cfg.styleDesc };
   });
 
   const results = await Promise.all(variantPromises);
+  // Attach brief for callers that inspect property or expect { designs, brief }
+  results.brief = brief;
+  results.designs = results;
   return results;
 }
 

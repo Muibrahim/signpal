@@ -1,43 +1,522 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Order #<%= order.id %> — SignPal</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Order #<%= order.id %> — SignPal Tracking & Payment</title>
   <link rel="icon" href="/images/signpal-logo-640.png" type="image/png">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/theme.css"><link rel="stylesheet" href="/css/design.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/design.css">
+  <style>
+    .order-status-page {
+      min-height: calc(100vh - 75px);
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+    }
+    .order-status-card {
+      width: min(840px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: 0 10px 35px rgba(12, 26, 103, 0.05);
+    }
+    .order-status-heading span {
+      font: 700 0.74rem var(--font-display);
+      color: var(--brand-orange);
+      letter-spacing: 0.14em;
+    }
+    .order-status-heading h1 {
+      font: 800 clamp(1.8rem, 4vw, 2.4rem) var(--font-display);
+      color: var(--brand-navy);
+      margin: 6px 0 8px;
+    }
+    .order-summary-grid {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 24px;
+      margin: 28px 0;
+      align-items: start;
+    }
+    .order-thumb {
+      min-height: 220px;
+      background: #0b0e17;
+      border-radius: 14px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+    .order-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .order-facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .fact-box {
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .fact-box small {
+      display: block;
+      font: 700 0.65rem var(--font-display);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .fact-box strong {
+      display: block;
+      font: 700 0.95rem var(--font-display);
+      color: var(--brand-navy);
+      margin-top: 4px;
+    }
+    .status-badge-paid {
+      color: #059669 !important;
+      background: #ecfdf5;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .status-badge-pending {
+      color: #d97706 !important;
+      background: #fffbeb;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    /* WhatsApp Sharing Bar */
+    .whatsapp-action-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 24px 0 32px;
+      padding: 16px 20px;
+      background: rgba(37, 211, 102, 0.08);
+      border: 1px solid rgba(37, 211, 102, 0.3);
+      border-radius: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wa-copy {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .wa-icon-bubble {
+      width: 40px;
+      height: 40px;
+      background: #25D366;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 20px;
+      flex: 0 0 auto;
+    }
+    .wa-copy strong {
+      display: block;
+      font: 700 0.88rem var(--font-display);
+      color: #065f46;
+    }
+    .wa-copy span {
+      font-size: 0.78rem;
+      color: #047857;
+    }
+    .btn-wa-share {
+      background: #25D366;
+      color: #fff;
+      text-decoration: none;
+      font: 700 0.85rem var(--font-display);
+      padding: 10px 18px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-wa-share:hover {
+      background: #1eb956;
+      transform: translateY(-1px);
+    }
+    .btn-wa-support {
+      background: var(--surface);
+      border: 1px solid #25D366;
+      color: #065f46;
+      text-decoration: none;
+      font: 700 0.82rem var(--font-display);
+      padding: 9px 16px;
+      border-radius: 10px;
+    }
+
+    /* Mobile Money Gateway Cards */
+    .gateway-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 14px 0 20px;
+    }
+    .gateway-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 12px;
+      background: var(--surface);
+      cursor: pointer;
+      text-align: center;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .gateway-card:hover {
+      border-color: var(--brand-orange);
+      transform: translateY(-1px);
+    }
+    .gateway-card.selected {
+      border-color: var(--brand-orange);
+      background: rgba(254, 106, 0, 0.04);
+      box-shadow: 0 0 0 2px rgba(254, 106, 0, 0.2);
+    }
+    .gateway-card input {
+      position: absolute;
+      opacity: 0;
+    }
+    .gateway-card-logo {
+      font: 800 0.95rem var(--font-display);
+      margin-bottom: 4px;
+    }
+    .logo-zaad { color: #f59e0b; }
+    .logo-evc { color: #10b981; }
+    .logo-edahab { color: #0284c7; }
+    .logo-sahal { color: #8b5cf6; }
+    .gateway-ussd {
+      display: inline-block;
+      font: 700 0.64rem var(--font-display);
+      background: var(--surface-2);
+      color: var(--muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* USSD Push Notification Simulation */
+    .ussd-push-modal {
+      display: none;
+      margin-top: 20px;
+      padding: 24px;
+      background: #0c1a67;
+      border-radius: 16px;
+      color: #fff;
+      text-align: center;
+      animation: fadeInStep 0.3s ease;
+    }
+    .ussd-push-modal.active {
+      display: block;
+    }
+    .phone-pulse-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(254, 106, 0, 0.2);
+      border: 2px solid #fe6a00;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 16px;
+      font-size: 24px;
+      animation: pulseLight 1.2s infinite;
+    }
+    .ussd-push-modal h3 {
+      font: 700 1.2rem var(--font-display);
+      margin-bottom: 6px;
+    }
+    .ussd-push-modal p {
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.8);
+      max-width: 440px;
+      margin: 0 auto 14px;
+    }
+    .ussd-pin-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font: 700 0.82rem var(--font-display);
+      color: #ff9a54;
+    }
+
+    /* Success Paid Card */
+    .paid-celebration-card {
+      text-align: center;
+      padding: 32px 20px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 16px;
+      margin-top: 24px;
+    }
+    .paid-celebration-card h2 {
+      font: 800 1.5rem var(--font-display);
+      color: #065f46;
+      margin-bottom: 6px;
+    }
+    .paid-celebration-card p {
+      font-size: 0.88rem;
+      color: #047857;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .order-summary-grid { grid-template-columns: 1fr; }
+      .gateway-cards-grid { grid-template-columns: 1fr 1fr; }
+      .whatsapp-action-bar { flex-direction: column; align-items: stretch; }
+    }
+  </style>
 </head>
 <body>
   <%- include('partials/nav') %>
+
   <main class="order-status-page">
     <section class="order-status-card">
-      <div class="order-status-heading"><span>ORDER #<%= order.id %></span><h1>Your SignPal order</h1><p>Track payment, production and delivery from this private page.</p></div>
+      <div class="order-status-heading">
+        <span>VERIFIED ORDER TRACKING · #<%= order.id %></span>
+        <h1>Order Status & Sifalo Checkout</h1>
+        <p>Real-time order pipeline tracking and instant mobile money verification.</p>
+      </div>
+
+      <!-- Order Details Grid -->
       <div class="order-summary-grid">
-        <div class="order-thumb"><% if (selectedDesign) { %><img src="<%= selectedDesign.url %>" alt="Selected concept"><% } %></div>
+        <div class="order-thumb">
+          <% if (selectedDesign) { %>
+            <img src="<%= selectedDesign.url %>" alt="Selected concept">
+          <% } else { %>
+            <div style="color: var(--muted); font-size: 0.8rem; padding: 20px; text-align: center;">Print Artwork Queued</div>
+          <% } %>
+        </div>
+
         <div class="order-facts">
-          <div><small>Product</small><strong><%= (order.product_type || 'Custom').replaceAll('_', ' ') %></strong></div>
-          <div><small>Fulfillment</small><strong><%= order.fulfillment_type === 'download' ? 'Design download' : 'Printed product' %></strong></div>
-          <div><small>Quantity</small><strong><%= order.quantity || 1 %></strong></div>
-          <div><small>Payment</small><strong id="payment-status"><%= order.payment_status %></strong></div>
-          <div><small>Amount</small><strong><%= order.amount_usd ? '$' + Number(order.amount_usd).toFixed(2) : 'Quote pending' %></strong></div>
+          <div class="fact-box">
+            <small>Product Type</small>
+            <strong><%= (order.product_type || 'Custom').replaceAll('_', ' ') %></strong>
+          </div>
+          <div class="fact-box">
+            <small>Fulfillment</small>
+            <strong><%= order.fulfillment_type === 'download' ? '300 DPI High-Res Download' : 'Physical Print Production' %></strong>
+          </div>
+          <div class="fact-box">
+            <small>Quantity</small>
+            <strong><%= order.quantity || 1 %> pcs</strong>
+          </div>
+          <div class="fact-box">
+            <small>Payment Status</small>
+            <strong id="payment-status">
+              <span class="<%= order.payment_status === 'paid' ? 'status-badge-paid' : 'status-badge-pending' %>">
+                <%= order.payment_status ? order.payment_status.toUpperCase() : 'PENDING' %>
+              </span>
+            </strong>
+          </div>
+          <div class="fact-box">
+            <small>Customer Name</small>
+            <strong><%= order.customer_name || 'Client' %></strong>
+          </div>
+          <div class="fact-box">
+            <small>SignPal Direct Price</small>
+            <strong><%= order.amount_usd ? '$' + Number(order.amount_usd).toFixed(2) : 'Quote Pending' %></strong>
+          </div>
         </div>
       </div>
 
-      <% if (order.payment_status !== 'paid' && order.amount_usd && paymentConfigured) { %>
-      <form id="pay-form" class="pay-form">
-        <h2>Pay securely with Sifalo Pay</h2>
-        <div class="form-row"><div class="form-group"><label for="gateway">Payment method</label><select id="gateway" name="gateway"><option value="zaad">ZAAD</option><option value="evc">EVC Plus</option><option value="edahab">eDahab</option><option value="sahal">SAHAL</option><option value="premier">Premier Wallet</option></select></div><div class="form-group"><label for="account">Mobile number</label><input id="account" name="account" type="tel" placeholder="+252…" required></div></div>
-        <button class="btn-primary" type="submit">Pay $<%= Number(order.amount_usd).toFixed(2) %></button><p id="pay-message" class="pay-message"></p>
-      </form>
-      <% } else if (!order.amount_usd) { %><div class="order-notice">Our production team is preparing your print quote. Nothing will enter production before you approve and pay.</div>
-      <% } else if (!paymentConfigured && order.payment_status !== 'paid') { %><div class="order-notice">Online payment setup is pending. Your order is safely saved and has not entered production.</div><% } %>
+      <!-- WhatsApp Team & Partner Share Bar -->
+      <div class="whatsapp-action-bar">
+        <div class="wa-copy">
+          <div class="wa-icon-bubble">💬</div>
+          <div>
+            <strong>Need Approval or Invoice on WhatsApp?</strong>
+            <span>Share this live proof card with your partner or finance department.</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <a class="btn-wa-share" id="btn-share-wa" href="https://wa.me/?text=<%= encodeURIComponent('Asc! Fadlan eeg proof-ka design-ka cusub ee ' + (order.product_type || 'SignPal') + ' halkan: ' + (process.env.APP_URL || 'https://signpal.so') + '/order/' + order.public_token) %>" target="_blank">
+            📲 Share Proof on WhatsApp
+          </a>
+          <a class="btn-wa-support" href="https://wa.me/252634226437?text=<%= encodeURIComponent('Asc SignPal, waxaan doonayaa faahfaahin ku saabsan Order #' + order.id) %>" target="_blank">
+            Contact Support
+          </a>
+        </div>
+      </div>
 
-      <% if (order.payment_status === 'paid' && order.fulfillment_type === 'download' && order.upscaled_design_url) { %><a class="btn-primary" href="<%= order.upscaled_design_url %>" download>Download paid design</a><% } %>
+      <!-- Paid State Celebration / Fulfillment -->
+      <div id="paid-panel" class="paid-celebration-card" style="<%= order.payment_status === 'paid' ? '' : 'display: none;' %>">
+        <h2>✓ Payment Verified & Confirmed!</h2>
+        <p>Thank you! Your order has entered our Hargeisa factory production and printing queue.</p>
+        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <% if (order.fulfillment_type === 'download' && order.upscaled_design_url) { %>
+            <a class="btn-primary" href="<%= order.upscaled_design_url %>" download>
+              📥 Download 300 DPI Production Files
+            </a>
+          <% } else if (order.fulfillment_type === 'download') { %>
+            <p style="font-weight: 600; color: #065f46;">Super-resolution 4x upscaling is finalizing in the background. Refresh in a few seconds to download.</p>
+          <% } %>
+          <a class="btn-primary" href="/order/<%= order.public_token %>/ticket" target="_blank" style="background: var(--brand-navy); border-color: var(--brand-navy); text-decoration: none;">
+            📄 View Prepress Job Ticket
+          </a>
+        </div>
+      </div>
+
+      <!-- Sifalo Pay Mobile Money Form (Only if unpaid) -->
+      <% if (order.payment_status !== 'paid' && order.amount_usd && paymentConfigured) { %>
+      <div id="payment-section">
+        <form id="pay-form" class="pay-form">
+          <h2 style="font: 700 1.2rem var(--font-display); color: var(--brand-navy); margin-bottom: 8px;">
+            Complete Payment with Sifalo Pay
+          </h2>
+          <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 14px;">
+            Choose your mobile money account. A secure USSD prompt will be sent directly to your phone screen.
+          </p>
+
+          <label style="font: 700 0.78rem var(--font-display); color: var(--brand-navy);">Select Mobile Money Provider:</label>
+          <div class="gateway-cards-grid">
+            <label class="gateway-card selected" onclick="selectGateway('zaad')">
+              <input type="radio" name="gateway" value="zaad" checked>
+              <div class="gateway-card-logo logo-zaad">ZAAD</div>
+              <span class="gateway-ussd">*880# Telesom</span>
+            </label>
+            <label class="gateway-card" onclick="selectGateway('evc')">
+              <input type="radio" name="gateway" value="evc">
+              <div class="gateway-card-logo logo-evc">EVC Plus</div>
+              <span class="gateway-ussd">*712# Hormuud</span>
+            </label>
+            <label class="gateway-card" onclick="selectGateway('edahab')">
+              <input type="radio" name="gateway" value="edahab">
+              <div class="gateway-card-logo logo-edahab">eDahab</div>
+              <span class="gateway-ussd">*789# Somtel</span>
+            </label>
+            <label class="gateway-card" onclick="selectGateway('sahal')">
+              <input type="radio" name="gateway" value="sahal">
+              <div class="gateway-card-logo logo-sahal">SAHAL</div>
+              <span class="gateway-ussd">*888# Golis</span>
+            </label>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label for="account" style="font: 700 0.8rem var(--font-display); color: var(--brand-navy);">
+              Registered Mobile Money Number:
+            </label>
+            <input id="account" name="account" type="tel" placeholder="e.g. +252 63 422 6437" required value="<%= order.customer_phone || '' %>">
+          </div>
+
+          <button class="btn-primary" type="submit" id="btn-pay-submit" style="width: 100%;">
+            Pay $<%= Number(order.amount_usd).toFixed(2) %> Now via Mobile Money
+          </button>
+          <p id="pay-message" class="pay-message" style="margin-top: 12px; font-size: 0.85rem; color: var(--muted);"></p>
+        </form>
+
+        <!-- USSD Push Modal Simulation -->
+        <div id="ussd-push-modal" class="ussd-push-modal">
+          <div class="phone-pulse-icon">📱</div>
+          <h3>Check Your Phone Screen Now!</h3>
+          <p>We sent a secure USSD payment prompt to <strong id="ussd-phone-display">+252...</strong>.</p>
+          <div class="ussd-pin-pill">
+            🔒 Enter your 4-digit PIN to approve $<%= Number(order.amount_usd).toFixed(2) %>
+          </div>
+          <p style="margin-top: 14px; font-size: 0.78rem; opacity: 0.7;">
+            SignPal is automatically verifying your transaction. Do not close this page.
+          </p>
+        </div>
+      </div>
+      <% } else if (!order.amount_usd) { %>
+        <div class="order-notice" style="margin-top: 20px; padding: 18px; border-radius: 12px; background: rgba(254, 106, 0, 0.08); border: 1px solid rgba(254, 106, 0, 0.25);">
+          <strong>⚡ Custom Production Quote in Progress</strong>
+          <p style="margin-top: 4px; font-size: 0.84rem; color: var(--muted);">Our Hargeisa team is confirming exact material specifications and finishing costs. You will receive an alert once ready.</p>
+        </div>
+      <% } else if (!paymentConfigured && order.payment_status !== 'paid') { %>
+        <div class="order-notice" style="margin-top: 20px; padding: 18px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border);">
+          <strong>📱 Offline Cash / Manual Zaad Order</strong>
+          <p style="margin-top: 4px; font-size: 0.84rem; color: var(--muted);">Online automated gateway is finalizing. To process immediately, send Zaad to Merchant <strong>#422643</strong> and notify us on WhatsApp.</p>
+        </div>
+      <% } %>
+
     </section>
   </main>
+
   <script>
-    const form=document.getElementById('pay-form');
-    if(form) form.addEventListener('submit',async(e)=>{e.preventDefault();const button=form.querySelector('button');const message=document.getElementById('pay-message');button.disabled=true;message.textContent='Sending payment request…';try{const data=Object.fromEntries(new FormData(form));const res=await fetch('/api/orders/<%= order.public_token %>/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const body=await res.json();if(!res.ok)throw new Error(body.error||'Payment failed');message.textContent=body.message;document.getElementById('payment-status').textContent=body.status;}catch(err){message.textContent=err.message;}finally{button.disabled=false;}});
+    function selectGateway(gw) {
+      document.querySelectorAll('.gateway-card').forEach(c => {
+        const isSelected = c.querySelector('input').value === gw;
+        c.classList.toggle('selected', isSelected);
+      });
+    }
+
+    const payForm = document.getElementById('pay-form');
+    if (payForm) {
+      payForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const button = document.getElementById('btn-pay-submit');
+        const message = document.getElementById('pay-message');
+        const ussdModal = document.getElementById('ussd-push-modal');
+        const phoneInput = document.getElementById('account').value;
+
+        button.disabled = true;
+        message.textContent = 'Initiating secure Sifalo Pay request…';
+
+        try {
+          const data = Object.fromEntries(new FormData(payForm));
+          const res = await fetch('/api/orders/<%= order.public_token %>/pay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const body = await res.json();
+          if (!res.ok) throw new Error(body.error || 'Payment initiation failed');
+
+          message.textContent = body.message;
+          document.getElementById('ussd-phone-display').textContent = phoneInput;
+          ussdModal.classList.add('active');
+
+          // Start auto-polling payment status every 3 seconds
+          startStatusPolling();
+        } catch (err) {
+          message.textContent = err.message;
+          button.disabled = false;
+        }
+      });
+    }
+
+    // Auto-polling for real-time payment confirmation
+    let pollingInterval = null;
+    function startStatusPolling() {
+      if (pollingInterval) return;
+      pollingInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/orders/<%= order.public_token %>/status');
+          const data = await res.json();
+          if (data.paymentStatus === 'paid') {
+            clearInterval(pollingInterval);
+            document.getElementById('payment-status').innerHTML = '<span class="status-badge-paid">PAID</span>';
+            const paySection = document.getElementById('payment-section');
+            if (paySection) paySection.style.display = 'none';
+            const paidPanel = document.getElementById('paid-panel');
+            if (paidPanel) paidPanel.style.display = 'block';
+          }
+        } catch (_) {}
+      }, 3000);
+    }
+
+    // If order was already processing, start polling immediately
+    <% if (order.payment_status === 'processing') { %>
+      startStatusPolling();
+    <% } %>
   </script>
-</body></html>
+</body>
+</html>
