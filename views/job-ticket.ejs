@@ -105,27 +105,46 @@
     /* Production Header */
     .prod-header {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 20px;
       padding-bottom: 20px;
       border-bottom: 2px solid var(--border-dark);
       margin-bottom: 20px;
+      align-items: center;
     }
 
-    .brand-mark {
-      font-family: 'Sora', sans-serif;
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
+    .ticket-qr-traveler {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
     }
-    .brand-mark span { color: var(--brand-orange); }
 
-    .prod-facility {
+    .qr-traveler-img {
+      border: 1px solid var(--border-dark);
+      border-radius: 4px;
+      display: block;
+    }
+
+    .qr-traveler-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .qr-traveler-text span {
       font-family: 'Space Mono', monospace;
-      font-size: 0.76rem;
-      text-transform: uppercase;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--border-dark);
+      letter-spacing: 0.05em;
+    }
+
+    .qr-traveler-text small {
+      font-size: 0.65rem;
       color: var(--muted);
-      margin-top: 4px;
     }
 
     .ticket-badge-box {
@@ -404,7 +423,7 @@
         <button type="button" class="btn-action btn-print" onclick="window.print()">
           🖨️ Print / Save as PDF
         </button>
-        <% 
+        <%
           const waPhone = '252634226437';
           const host = process.env.BASE_URL || 'https://signpal.so';
           const printAssetUrl = order.upscaled_design_url || order.flat_design_url || '';
@@ -430,6 +449,16 @@ Job Ticket: ${host}/order/${order.public_token}/ticket`;
       <div>
         <div class="brand-mark">Sign<span>Pal</span> Prepress</div>
         <div class="prod-facility">Industrial Digital Press & Fabrication Facility · Horn of Africa</div>
+      </div>
+      <div class="ticket-qr-traveler" title="Scan with mobile phone to advance floor stage">
+        <%
+          const qrScanUrl = (process.env.BASE_URL || 'https://signpal.net') + '/admin/orders/' + order.id + '/scan-action';
+        %>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=1&data=<%= encodeURIComponent(qrScanUrl) %>" alt="QR Floor Traveler" width="68" height="68" class="qr-traveler-img" />
+        <div class="qr-traveler-text">
+          <span>QR TRAVELER</span>
+          <small>Scan to advance</small>
+        </div>
       </div>
       <div class="ticket-badge-box">
         <div class="job-id">JOB #<%= String(order.id).padStart(5, '0') %></div>

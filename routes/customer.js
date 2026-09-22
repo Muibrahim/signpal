@@ -23,7 +23,13 @@ router.get('/api/products', (_req, res) => {
 });
 
 router.get('/api/pricing/estimate', (req, res) => {
-  res.json(estimatePrice(req.query.productType, req.query.quantity));
+  const options = {
+    widthM: req.query.widthM || req.query.width,
+    heightM: req.query.heightM || req.query.height,
+    sqm: req.query.sqm,
+    finishing: req.query.finishing
+  };
+  res.json(estimatePrice(req.query.productType, req.query.quantity, options));
 });
 
 router.get('/order/:token', async (req, res) => {
@@ -214,7 +220,21 @@ async function generateAndSavePrintFiles(orderId, description, selectedDesignObj
 
 // Submit an order with a selected design
 router.post('/api/orders', async (req, res) => {
-  const { userDescription, designs, selectedDesign, customerName, customerEmail, customerPhone, productType, fulfillmentType, quantity } = req.body;
+  const {
+    userDescription,
+    designs,
+    selectedDesign,
+    customerName,
+    customerEmail,
+    customerPhone,
+    productType,
+    fulfillmentType,
+    quantity,
+    widthM,
+    heightM,
+    sqm,
+    finishing
+  } = req.body;
 
   if (!customerName || !customerEmail || selectedDesign === undefined || !['print', 'download'].includes(fulfillmentType)) {
     return res.status(400).json({ error: 'Customer details, selected design, and Print or Download choice are required' });
@@ -223,7 +243,8 @@ router.post('/api/orders', async (req, res) => {
   try {
     const publicToken = crypto.randomBytes(24).toString('hex');
     const downloadPrice = Number(process.env.DESIGN_DOWNLOAD_PRICE_USD || 15);
-    const pricing = estimatePrice(productType, quantity);
+    const options = { widthM, heightM, sqm, finishing };
+    const pricing = estimatePrice(productType, quantity, options);
     const printAmount = pricing.available && !pricing.quoteRequired ? pricing.total : null;
     const order = await orders.createOrder({
       userDescription,
@@ -256,6 +277,78 @@ router.post('/api/orders', async (req, res) => {
   } catch (err) {
     console.error('Order creation failed:', err.message);
     res.status(500).json({ error: 'Failed to submit order. Please try again.' });
+  }
+});
+
+// Automated Sifalo Pay & Mobile Money webhook listener
+router.post('/api/webhooks/sifalo', async (req, res) => {
+  try {
+    const signature = req.headers['x-sifalo-signature'] || req.headers['x-signature'] || req.query.signature;
+    const secret = process.env.SIFALO_WEBHOOK_SECRET || process.env.SIFALO_API_KEY;
+
+    // Never accept payment confirmation without a configured, valid signature.
+    if (!secret) {
+      console.error('[Webhook] Signature secret is not configured');
+      return res.status(503).json({ error: 'Webhook verification is not configured' });
+    }
+    const isValid = payments.verifyWebhookSignature(req.body, signature, secret);
+    if (!isValid) {
+      console.warn('[Webhook] Rejected invalid signature from', req.ip);
+      return res.status(401).json({ error: 'Invalid webhook signature' });
+    }
+
+    const parsed = payments.parseWebhookPayload(req.body);
+    if (!parsed || !parsed.orderId) {
+      return res.status(400).json({ error: 'Missing or malformed order reference in payload' });
+    }
+
+    // Lookup order by ID or public token
+    let order = null;
+    if (/^\d+$/.test(parsed.orderId)) {
+      order = await orders.getOrderById(parseInt(parsed.orderId, 10));
+    }
+    if (!order) {
+      order = await orders.getOrderByToken(parsed.orderId);
+    }
+
+    if (!order) {
+      console.warn(`[Webhook] Order ${parsed.orderId} not found`);
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Idempotent response if already marked paid
+    if (order.payment_status === 'paid') {
+      return res.json({ success: true, message: 'Order already reconciled as paid', orderId: order.id });
+    }
+
+    if (parsed.status === 'paid') {
+      const provider = parsed.gateway || 'sifalo';
+      const reference = parsed.transactionId || `sifalo-webhook-${Date.now()}`;
+      const updated = await orders.updatePayment(order.id, {
+        status: 'paid',
+        provider,
+        reference
+      });
+
+      // Automatically trigger print generation pipeline
+      const designs = updated.designs_json ? JSON.parse(updated.designs_json) : [];
+      const selectedIndex = updated.selected_design !== null && updated.selected_design !== undefined ? updated.selected_design : 0;
+      const chosen = designs[selectedIndex] || null;
+
+      if (chosen) {
+        generateAndSavePrintFiles(updated.id, updated.user_description || '', chosen).catch(err => {
+          console.error(`[Webhook Fulfillment] Generation failed for order ${updated.id}:`, err.message);
+        });
+      }
+
+      console.log(`[Webhook] Successfully reconciled order ${order.id} as PAID via ${provider}.`);
+      return res.json({ success: true, orderId: order.id, status: 'paid' });
+    }
+
+    res.json({ success: true, message: `Webhook processed with status ${parsed.status}`, orderId: order.id });
+  } catch (err) {
+    console.error('[Webhook] Error processing Sifalo webhook:', err.message);
+    res.status(500).json({ error: 'Internal webhook handling error' });
   }
 });
 

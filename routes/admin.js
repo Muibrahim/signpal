@@ -257,4 +257,72 @@ router.patch('/admin/orders/:id/kanban', adminAuth, async (req, res) => {
   }
 });
 
+// Mobile floor technician quick scan action screen
+router.get('/admin/orders/:id/scan-action', adminAuth, async (req, res) => {
+  try {
+    const order = await orders.getOrderById(req.params.id);
+    if (!order) return res.status(404).send('Job Order not found');
+
+    const { getPrintSpec, getMaterialFinishingSpec } = require('../lib/print-engine');
+    const spec = getPrintSpec(order.product_type || 'business_card');
+    const material = getMaterialFinishingSpec(order.product_type || 'business_card', order.user_description || '');
+
+    const STAGES = [
+      { id: 'pending', name: '1. Preflight', icon: '📥' },
+      { id: 'rip_queue', name: '2. RIP Queue', icon: '🖨️' },
+      { id: 'in_progress', name: '3. Press / Fab', icon: '⚙️' },
+      { id: 'finishing', name: '4. Finishing & QC', icon: '✂️' },
+      { id: 'out_for_delivery', name: '5. Dispatched', icon: '🚚' },
+      { id: 'completed', name: '6. Fulfilled', icon: '✅' }
+    ];
+
+    const currentIndex = STAGES.findIndex(s => s.id === order.status);
+    const nextStage = currentIndex >= 0 && currentIndex < STAGES.length - 1 ? STAGES[currentIndex + 1] : null;
+
+    res.render('job-scan-action', {
+      order,
+      spec,
+      material,
+      stages: STAGES,
+      currentStage: STAGES[currentIndex] || { id: order.status, name: order.status, icon: '📋' },
+      nextStage,
+      themeCSS: buildThemeCSS()
+    });
+  } catch (err) {
+    console.error('Scan action error:', err.message);
+    res.status(500).send('Error loading scan action');
+  }
+});
+
+// Rapid advance API for floor scanners and mobile technician view
+router.post('/api/admin/orders/:id/advance-stage', adminAuth, async (req, res) => {
+  try {
+    const order = await orders.getOrderById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    const STAGE_ORDER = ['pending', 'rip_queue', 'in_progress', 'finishing', 'out_for_delivery', 'completed'];
+    const { targetStatus } = req.body;
+
+    let newStatus = targetStatus;
+    if (!newStatus) {
+      const idx = STAGE_ORDER.indexOf(order.status);
+      if (idx >= 0 && idx < STAGE_ORDER.length - 1) {
+        newStatus = STAGE_ORDER[idx + 1];
+      } else {
+        newStatus = order.status;
+      }
+    }
+
+    if (!STAGE_ORDER.includes(newStatus)) {
+      return res.status(400).json({ error: 'Invalid target status' });
+    }
+
+    const updated = await orders.updateOrderStatus(order.id, newStatus);
+    res.json({ success: true, previousStatus: order.status, status: newStatus, order: updated });
+  } catch (err) {
+    console.error('Advance stage error:', err.message);
+    res.status(500).json({ error: 'Failed to advance stage' });
+  }
+});
+
 module.exports = router;

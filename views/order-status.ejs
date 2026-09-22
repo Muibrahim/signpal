@@ -277,6 +277,47 @@
       margin-bottom: 18px;
     }
 
+    .lang-switch-pills {
+      display: inline-flex;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .lang-btn {
+      border: none;
+      background: transparent;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font: 700 0.72rem var(--font-display);
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .lang-btn.active {
+      background: var(--brand-navy);
+      color: #fff;
+    }
+    .live-pulse-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font: 700 0.7rem var(--font-display);
+      color: #059669;
+      background: #ecfdf5;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid #a7f3d0;
+    }
+    .dot-ping {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulseLight 1.5s infinite;
+    }
+
     @media (max-width: 768px) {
       .order-summary-grid { grid-template-columns: 1fr; }
       .gateway-cards-grid { grid-template-columns: 1fr 1fr; }
@@ -289,10 +330,19 @@
 
   <main class="order-status-page">
     <section class="order-status-card">
-      <div class="order-status-heading">
-        <span>VERIFIED ORDER TRACKING · #<%= order.id %></span>
-        <h1>Order Status & Sifalo Checkout</h1>
-        <p>Real-time order pipeline tracking and instant mobile money verification.</p>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <div class="order-status-heading">
+          <span id="txt-eyebrow">VERIFIED ORDER TRACKING · #<%= order.id %></span>
+          <h1 id="txt-title">Order Status & Sifalo Checkout</h1>
+          <p id="txt-subtitle">Real-time order pipeline tracking and instant mobile money verification.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+          <div class="live-pulse-dot"><span class="dot-ping"></span> <span id="txt-live-sync">Live Auto-Sync Active</span></div>
+          <div class="lang-switch-pills">
+            <button type="button" class="lang-btn active" id="btn-lang-en" onclick="setLanguage('en')">English</button>
+            <button type="button" class="lang-btn" id="btn-lang-so" onclick="setLanguage('so')">Af-Soomaali</button>
+          </div>
+        </div>
       </div>
 
       <!-- Order Details Grid -->
@@ -307,19 +357,25 @@
 
         <div class="order-facts">
           <div class="fact-box">
-            <small>Product Type</small>
+            <small id="txt-label-product">Product Type</small>
             <strong><%= (order.product_type || 'Custom').replaceAll('_', ' ') %></strong>
           </div>
           <div class="fact-box">
-            <small>Fulfillment</small>
-            <strong><%= order.fulfillment_type === 'download' ? '300 DPI High-Res Download' : 'Physical Print Production' %></strong>
+            <small id="txt-label-prod-stage">Factory Production Stage</small>
+            <strong id="prod-stage-display" style="color: var(--brand-orange); text-transform: uppercase;">
+              <%= (order.status || 'pending').replaceAll('_', ' ') %>
+            </strong>
           </div>
           <div class="fact-box">
-            <small>Quantity</small>
+            <small id="txt-label-fulfillment">Fulfillment</small>
+            <strong id="txt-val-fulfillment"><%= order.fulfillment_type === 'download' ? '300 DPI High-Res Download' : 'Physical Print Production' %></strong>
+          </div>
+          <div class="fact-box">
+            <small id="txt-label-qty">Quantity</small>
             <strong><%= order.quantity || 1 %> pcs</strong>
           </div>
           <div class="fact-box">
-            <small>Payment Status</small>
+            <small id="txt-label-payment">Payment Status</small>
             <strong id="payment-status">
               <span class="<%= order.payment_status === 'paid' ? 'status-badge-paid' : 'status-badge-pending' %>">
                 <%= order.payment_status ? order.payment_status.toUpperCase() : 'PENDING' %>
@@ -327,11 +383,7 @@
             </strong>
           </div>
           <div class="fact-box">
-            <small>Customer Name</small>
-            <strong><%= order.customer_name || 'Client' %></strong>
-          </div>
-          <div class="fact-box">
-            <small>SignPal Direct Price</small>
+            <small id="txt-label-price">SignPal Direct Price</small>
             <strong><%= order.amount_usd ? '$' + Number(order.amount_usd).toFixed(2) : 'Quote Pending' %></strong>
           </div>
         </div>
@@ -493,30 +545,113 @@
       });
     }
 
-    // Auto-polling for real-time payment confirmation
+    // Bilingual Dictionary for Customer Tracking Experience
+    const I18N = {
+      en: {
+        eyebrow: 'VERIFIED ORDER TRACKING · #<%= order.id %>',
+        title: 'Order Status & Sifalo Checkout',
+        subtitle: 'Real-time order pipeline tracking and instant mobile money verification.',
+        liveSync: 'Live Auto-Sync Active',
+        productLabel: 'Product Type',
+        stageLabel: 'Factory Production Stage',
+        fulfillmentLabel: 'Fulfillment',
+        qtyLabel: 'Quantity',
+        paymentLabel: 'Payment Status',
+        priceLabel: 'SignPal Direct Price',
+        stages: {
+          pending: '1. Preflight Verification',
+          rip_queue: '2. RIP Press Queue',
+          in_progress: '3. Press / Fabrication',
+          finishing: '4. Finishing & Quality Control',
+          out_for_delivery: '5. Out for Delivery',
+          completed: '6. Completed & Delivered'
+        }
+      },
+      so: {
+        eyebrow: 'LA-SOCODKA DALABKA XAQIIQSAN · #<%= order.id %>',
+        title: 'Xaaladda Dalabka & Bixinta Sifalo',
+        subtitle: 'La-soco habka daabacaadda tooska ah iyo xaqiijinta degdegga ah ee lacagta moobilka.',
+        liveSync: 'Xogta Tooska ah Way Shaqaynaysaa',
+        productLabel: 'Nooca Alaabta',
+        stageLabel: 'Heerka Warshadda Hadda',
+        fulfillmentLabel: 'Habka Keenista',
+        qtyLabel: 'Tirada (Xabbo)',
+        paymentLabel: 'Xaaladda Lacagta',
+        priceLabel: 'Qiimaha Tooska ah ee SignPal',
+        stages: {
+          pending: '1. Hubinta Kahor Daabacaadda',
+          rip_queue: '2. Safka Furfurka Daabacaadda (RIP)',
+          in_progress: '3. Daabacaadda & Farsamada Warshadda',
+          finishing: '4. Goynta, Dhameystirka & Tayada',
+          out_for_delivery: '5. Loo Soo Diray Macmiilka',
+          completed: '6. Waa La Dhamaystiray & La Gaadhsiiyay'
+        }
+      }
+    };
+
+    let currentLang = 'en';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
+      document.getElementById('btn-lang-so').classList.toggle('active', lang === 'so');
+
+      const dict = I18N[lang];
+      document.getElementById('txt-eyebrow').textContent = dict.eyebrow;
+      document.getElementById('txt-title').textContent = dict.title;
+      document.getElementById('txt-subtitle').textContent = dict.subtitle;
+      document.getElementById('txt-live-sync').textContent = dict.liveSync;
+      document.getElementById('txt-label-product').textContent = dict.productLabel;
+      document.getElementById('txt-label-prod-stage').textContent = dict.stageLabel;
+      document.getElementById('txt-label-fulfillment').textContent = dict.fulfillmentLabel;
+      document.getElementById('txt-label-qty').textContent = dict.qtyLabel;
+      document.getElementById('txt-label-payment').textContent = dict.paymentLabel;
+      document.getElementById('txt-label-price').textContent = dict.priceLabel;
+
+      // Update current stage translation
+      const stageEl = document.getElementById('prod-stage-display');
+      const curStatus = stageEl.getAttribute('data-status') || '<%= order.status || "pending" %>';
+      stageEl.textContent = dict.stages[curStatus] || curStatus.toUpperCase();
+    }
+
+    // Continuous Real-Time Status & Payment Polling
     let pollingInterval = null;
     function startStatusPolling() {
       if (pollingInterval) return;
       pollingInterval = setInterval(async () => {
         try {
           const res = await fetch('/api/orders/<%= order.public_token %>/status');
+          if (!res.ok) return;
           const data = await res.json();
+
+          // 1. Update Production Kanban Stage in Real Time
+          if (data.status) {
+            const stageEl = document.getElementById('prod-stage-display');
+            stageEl.setAttribute('data-status', data.status);
+            const dict = I18N[currentLang];
+            stageEl.textContent = dict.stages[data.status] || data.status.replaceAll('_', ' ').toUpperCase();
+          }
+
+          // 2. Update Payment Status & Reveal Fulfillment
           if (data.paymentStatus === 'paid') {
-            clearInterval(pollingInterval);
             document.getElementById('payment-status').innerHTML = '<span class="status-badge-paid">PAID</span>';
             const paySection = document.getElementById('payment-section');
             if (paySection) paySection.style.display = 'none';
             const paidPanel = document.getElementById('paid-panel');
             if (paidPanel) paidPanel.style.display = 'block';
+
+            // If download URL is ready, enable download button
+            if (data.downloadUrl) {
+              const dlBtn = document.getElementById('btn-download-production');
+              if (dlBtn) dlBtn.href = data.downloadUrl;
+            }
           }
         } catch (_) {}
-      }, 3000);
+      }, 4000);
     }
 
-    // If order was already processing, start polling immediately
-    <% if (order.payment_status === 'processing') { %>
-      startStatusPolling();
-    <% } %>
+    // Initialize real-time continuous sync immediately
+    startStatusPolling();
   </script>
 </body>
 </html>

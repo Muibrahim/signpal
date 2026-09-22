@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Job #<%= order.id %> Floor Scan — SignPal Factory</title>
+  <link rel="icon" href="/images/signpal-logo-640.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@700&family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <%- themeCSS %>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0b0e17;
+      color: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+    }
+    .scan-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .scan-header {
+      background: #151928;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .job-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fe6a00;
+    }
+    .status-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(254, 106, 0, 0.15);
+      border: 1px solid #fe6a00;
+      color: #ff9843;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .order-card {
+      background: #151928;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .order-title {
+      font-family: 'Sora', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .order-specs {
+      font-size: 0.88rem;
+      color: #9ca3af;
+      line-height: 1.5;
+    }
+    .order-specs strong { color: #e5e7eb; }
+    .advance-btn-large {
+      width: 100%;
+      padding: 18px 24px;
+      background: #059669;
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Sora', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.35);
+      transition: transform 0.1s, background 0.2s;
+    }
+    .advance-btn-large:active {
+      transform: scale(0.98);
+      background: #047857;
+    }
+    .stages-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .stage-btn {
+      width: 100%;
+      padding: 14px 16px;
+      background: #1c2338;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      color: #d1d5db;
+      font-family: 'Sora', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .stage-btn.active {
+      background: rgba(254, 106, 0, 0.18);
+      border-color: #fe6a00;
+      color: #fff;
+    }
+    .stage-btn:hover {
+      background: #252e49;
+    }
+    .links-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .links-row a {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      background: #1f293d;
+      border-radius: 10px;
+      color: #93c5fd;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .notify-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10b981;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      display: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="scan-wrap">
+    <div class="scan-header">
+      <div>
+        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; font-family: 'Space Mono';">Job Traveler</div>
+        <div class="job-num">#<%= String(order.id).padStart(5, '0') %></div>
+      </div>
+      <div class="status-badge" id="current-badge"><%= currentStage.icon %> <%= currentStage.name %></div>
+    </div>
+
+    <div class="order-card">
+      <div class="order-title"><%= spec.name %> (<%= order.quantity || 1 %> units)</div>
+      <div class="order-specs">
+        <div><strong>Customer:</strong> <%= order.customer_name %> (<%= order.customer_phone || 'No phone' %>)</div>
+        <div><strong>Trim Dimensions:</strong> <%= spec.widthMm ? spec.widthMm + ' × ' + spec.heightMm + ' mm' : 'Custom' %> (+<%= spec.bleedMm %>mm bleed)</div>
+        <div><strong>Substrate:</strong> <%= material.substrate %></div>
+        <div><strong>Finishing:</strong> <%= material.finishing %></div>
+        <div><strong>Payment:</strong> <%= (order.payment_status || 'unpaid').toUpperCase() %> ($<%= order.amount_usd || '0.00' %>)</div>
+      </div>
+    </div>
+
+    <% if (nextStage) { %>
+      <button class="advance-btn-large" id="btn-quick-advance" onclick="advanceStage('<%= nextStage.id %>')">
+        ⚡ ADVANCE TO <%= nextStage.name.toUpperCase() %>
+      </button>
+    <% } %>
+
+    <div class="order-card">
+      <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.05em;">
+        Direct Stage Jump
+      </div>
+      <div class="stages-selector">
+        <% stages.forEach(function(st) { %>
+          <button class="stage-btn <%= st.id === order.status ? 'active' : '' %>" onclick="advanceStage('<%= st.id %>')">
+            <span><%= st.icon %> <%= st.name %></span>
+            <% if (st.id === order.status) { %><span>● CURRENT</span><% } else { %><span>→</span><% } %>
+          </button>
+        <% }); %>
+      </div>
+    </div>
+
+    <div class="links-row">
+      <a href="/order/<%= order.public_token %>/ticket" target="_blank">📄 Open Prepress Job Ticket</a>
+      <a href="/admin">📋 Mission Control Kanban</a>
+    </div>
+  </div>
+
+  <div class="notify-toast" id="toast">Stage updated!</div>
+
+  <script>
+    async function advanceStage(targetStatus) {
+      try {
+        const res = await fetch('/api/admin/orders/<%= order.id %>/advance-stage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetStatus })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const toast = document.getElementById('toast');
+          toast.style.display = 'block';
+          toast.textContent = '✓ Moved to ' + targetStatus.toUpperCase();
+          setTimeout(() => { window.location.reload(); }, 600);
+        } else {
+          alert(data.error || 'Failed to update stage');
+        }
+      } catch (err) {
+        alert('Network error updating status');
+      }
+    }
+  </script>
+
+</body>
+</html>
