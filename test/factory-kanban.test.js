@@ -10,10 +10,10 @@ test('getMaterialFinishingSpec assigns commercial press substrates and finishing
   assert.match(cardSpec.substrate, /400gsm/i);
   assert.match(cardSpec.finishing, /Lamination/i);
 
-  const bajaajSpec = getMaterialFinishingSpec('bajaaj_wrap', 'Full wrap for delivery');
-  assert.match(bajaajSpec.substrate, /Cast.*Vinyl/i);
-  assert.match(bajaajSpec.finishing, /Overlaminate/i);
-  assert.equal(bajaajSpec.turnaroundHours, 48);
+  const vehicleSpec = getMaterialFinishingSpec('vehicle_wrap', 'Full wrap for commercial fleet');
+  assert.match(vehicleSpec.substrate, /Cast.*Vinyl/i);
+  assert.match(vehicleSpec.finishing, /Barrier Film/i);
+  assert.equal(vehicleSpec.turnaroundHours, 48);
 
   const lettersSpec = getMaterialFinishingSpec('three_d_letters', 'Backlit halo glow letters');
   assert.match(lettersSpec.substrate, /Acrylic/i);

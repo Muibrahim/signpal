@@ -14,14 +14,11 @@ test('corporate bundle provides 10% discount against market reference', () => {
   assert.equal(estimate.currency, 'USD');
 });
 
-test('bajaaj full wrap provides 10% discount against market reference', () => {
-  const estimate = estimatePrice('bajaaj_wrap', 1);
-  assert.equal(estimate.available, true);
-  assert.equal(estimate.quoteRequired, false);
-  assert.equal(estimate.competitorTotal, 140);
-  assert.equal(estimate.total, 126);
-  assert.equal(estimate.unitPrice, 126);
-  assert.equal(estimate.currency, 'USD');
+test('vehicle wrap enforces quote-only with market reference ranges', () => {
+  const estimate = estimatePrice('vehicle_wrap', 1);
+  assert.equal(estimate.available, false);
+  assert.equal(estimate.quoteRequired, true);
+  assert.deepEqual(estimate.referenceRange, [210, 635]);
 });
 
 test('architectural signage and fabrication products enforce quote-only with market reference ranges', () => {
@@ -53,11 +50,11 @@ test('print engine provides dedicated physical fabrication specifications for B2
   assert.equal(corpSpec.dpi, 300);
   assert.equal(corpSpec.bleedMm, 5);
 
-  const bajaajSpec = getPrintSpec('bajaaj_wrap');
-  assert.equal(bajaajSpec.widthMm, 2500);
-  assert.equal(bajaajSpec.heightMm, 1500);
-  assert.equal(bajaajSpec.dpi, 150);
-  assert.equal(bajaajSpec.bleedMm, 20);
+  const vehicleSpec = getPrintSpec('vehicle_wrap');
+  assert.equal(vehicleSpec.widthMm, 4800);
+  assert.equal(vehicleSpec.heightMm, 2000);
+  assert.equal(vehicleSpec.dpi, 150);
+  assert.equal(vehicleSpec.bleedMm, 25);
 
   const threeDSpec = getPrintSpec('three_d_letters');
   assert.equal(threeDSpec.widthMm, 2400);
@@ -77,14 +74,14 @@ test('pre-flight quality evaluation succeeds for B2B products', () => {
   assert.equal(preflightCorp.score, 100);
   assert.equal(preflightCorp.bleedMm, 5);
 
-  const preflightBajaaj = evaluatePreflightQuality({ productType: 'bajaaj_wrap', hasHighRes: true, hasFlatArt: true });
-  assert.equal(preflightBajaaj.score, 100);
-  assert.equal(preflightBajaaj.bleedMm, 20);
+  const preflightVehicle = evaluatePreflightQuality({ productType: 'vehicle_wrap', hasHighRes: true, hasFlatArt: true });
+  assert.equal(preflightVehicle.score, 100);
+  assert.equal(preflightVehicle.bleedMm, 25);
 });
 
 test('catalog lists B2B products with valid routing identifiers', () => {
   assert.equal(getProduct('corporate_bundle').id, 'corporate_bundle');
-  assert.equal(getProduct('bajaaj_wrap').id, 'bajaaj_wrap');
+  assert.equal(getProduct('vehicle_wrap').id, 'vehicle_wrap');
   assert.equal(getProduct('three_d_letters').id, 'three_d_letters');
   assert.equal(getProduct('pylon_sign').id, 'pylon_sign');
 });

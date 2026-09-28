@@ -160,7 +160,7 @@ STRUCTURED BRAND BRIEF:
 
   let formatType = '';
   const isSignage = ['shop_sign', 'three_d_letters', 'illuminated_sign', 'neon_sign', 'acrylic_sign', 'pylon_sign', 'cladding_sign'].includes(productType);
-  const isVehicle = ['bajaaj_wrap', 'vehicle_wrap', 'vehicle_decal'].includes(productType);
+  const isVehicle = ['vehicle_wrap', 'vehicle_decal'].includes(productType);
   const isCorporateBundle = productType === 'corporate_bundle';
 
   if (isSignage) {
@@ -170,9 +170,7 @@ STRUCTURED BRAND BRIEF:
   } else if (isVehicle) {
     formatType = forceFlat
       ? `Commercial vehicle wrap template flat layout. Aspect ratio ${printSpec.aspectRatio} (${printSpec.widthMm}x${printSpec.heightMm}mm). Flat orthographic side panels, front hood, and rear section graphics with 20mm bleed margin, high-resolution vector brand decals, and clear window/door trim lines.`
-      : productType === 'bajaaj_wrap'
-        ? `Photorealistic 3D automotive render of a custom-wrapped Bajaaj (three-wheeled auto-rickshaw) parked in front of a modern urban commercial street. Full glossy automotive vinyl wrap featuring vibrant branded livery, sharp typography, and high-impact visual graphics.`
-        : `Photorealistic 3D commercial vehicle fleet wrap render of a branded commercial delivery van/vehicle in a sleek urban showroom setting with glossy reflective vinyl finish.`;
+      : `Photorealistic 3D commercial vehicle wrap render matching the vehicle model and coverage specified in the customer brief, with glossy reflective vinyl finish and realistic body panels.`;
   } else if (isCorporateBundle) {
     formatType = forceFlat
       ? `Corporate Identity Suite presentation sheet (${printSpec.widthMm}x${printSpec.heightMm}mm). 2D orthographic canvas containing matching business card (85x55mm), A4 corporate letterhead, CR80 employee ID badge with lanyard, and trade show rollup banner (800x2000mm) laid out on a synchronized brand grid with 5mm bleed.`
