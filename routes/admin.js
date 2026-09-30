@@ -9,6 +9,7 @@ const router = express.Router();
 const orders = require('../db/orders');
 const { buildThemeCSS } = require('../lib/landing-context');
 const { generateAndSavePrintFiles } = require('./customer');
+const siteContent = require('../db/site-content');
 
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'signpal-local-only';
@@ -51,9 +52,52 @@ function adminAuth(req, res, next) {
   }
 }
 
+router.use(adminAuth, async (_req, res, next) => {
+  try { res.locals.content = await siteContent.getSiteContent(); next(); }
+  catch (err) { next(err); }
+});
+
 // Admin dashboard
-router.get('/admin', adminAuth, async (_req, res) => {
+router.get('/admin', (_req, res) => {
   res.render('admin', { themeCSS: buildThemeCSS() });
+});
+
+router.get('/api/admin/content', (_req, res) => {
+  res.json({ content: res.locals.content });
+});
+
+router.put('/api/admin/content', async (req, res) => {
+  const value = req.body?.content;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return res.status(400).json({ error: 'A valid content object is required' });
+  }
+  const requiredObjects = ['global', 'labels', 'hero', 'showcase', 'pathways', 'process', 'portfolio', 'factory', 'pricing', 'closing', 'pages', 'catalog', 'design'];
+  const missingObject = requiredObjects.find((key) => !value[key] || typeof value[key] !== 'object' || Array.isArray(value[key]));
+  const requiredArrays = [
+    ['navigation', value.navigation],
+    ['showcase.items', value.showcase?.items],
+    ['pathways.items', value.pathways?.items],
+    ['process.items', value.process?.items],
+    ['portfolio.items', value.portfolio?.items],
+    ['pricing.items', value.pricing?.items],
+    ['catalog.categories', value.catalog?.categories],
+    ['catalog.products', value.catalog?.products],
+    ['design.vehicleTypes', value.design?.vehicleTypes],
+    ['design.wrapCoverage', value.design?.wrapCoverage]
+  ];
+  const missingArray = requiredArrays.find(([, currentValue]) => !Array.isArray(currentValue));
+  if (missingObject || missingArray) {
+    return res.status(400).json({ error: `Required CMS section is missing or invalid: ${missingObject || missingArray[0]}` });
+  }
+  const bytes = Buffer.byteLength(JSON.stringify(value), 'utf8');
+  if (bytes > 500000) return res.status(413).json({ error: 'Content is too large' });
+  try {
+    const saved = await siteContent.updateSiteContent(value);
+    res.json({ success: true, content: saved.value_json, updatedAt: saved.updated_at });
+  } catch (err) {
+    console.error('Failed to update website content:', err.message);
+    res.status(500).json({ error: 'Website content could not be saved' });
+  }
 });
 
 // List all orders

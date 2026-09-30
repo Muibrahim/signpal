@@ -20,3 +20,4 @@ html{scroll-behavior:smooth}body{font-family:var(--body);color:var(--ink);backgr
 @media(max-width:900px){.content-card-grid{grid-template-columns:1fr 1fr}.page-action-panel{align-items:flex-start;flex-direction:column}.page-action-panel .button-row{margin-top:8px}.nav-links{box-shadow:0 18px 35px rgba(12,26,103,.12)}.nav-link{width:100%}}
 @media(max-width:620px){.content-card-grid{grid-template-columns:1fr}}
 @media(max-width:620px){.topbar-inner div a:first-child,.topbar-inner div a:last-child{display:none}.topbar-inner{justify-content:center}.topbar-inner div{justify-content:center}}
+.product-feature.product-feature::before{background-image:var(--cms-image)}

@@ -17,6 +17,16 @@
   <main class="admin-main">
     <div class="admin-container">
 
+      <section class="cms-panel">
+        <div class="cms-heading">
+          <div><span class="cms-kicker">Website CMS</span><h1>Landing Page & Company Content</h1><p>Edit business details, homepage copy and image URLs here. Changes publish immediately after saving.</p></div>
+          <button type="button" class="btn-save cms-save" id="btn-save-content">Save website content</button>
+        </div>
+        <div class="cms-fields" id="cms-fields"></div>
+        <details class="cms-advanced"><summary>Advanced: edit all structured content</summary><p>Use valid JSON. This includes navigation, cards, lists and all company pages.</p><textarea id="cms-json" rows="18" spellcheck="false"></textarea></details>
+        <div class="cms-status" id="cms-status"></div>
+      </section>
+
       <!-- Factory Floor KPI Bar -->
       <div class="kpi-bar">
         <div class="kpi-card">
@@ -303,6 +313,43 @@
     let currentModalId = null;
 
     function $(id) { return document.getElementById(id); }
+
+    let cmsContent = <%- JSON.stringify(content).replace(/</g, '\\u003c') %>;
+    const cmsFields = [
+      ['Business','global.siteName','Site name'],['Business','global.email','Public email'],
+      ['Business','global.whatsappNumber','WhatsApp display number'],['Business','global.whatsappDigits','WhatsApp digits only'],
+      ['Business','global.phone','Factory phone'],['Business','global.address','Factory address'],
+      ['Business','global.openingHours','Opening hours'],['Business','global.serviceArea','Service area'],
+      ['Brand','global.logoUrl','Logo URL'],['Brand','global.metaTitle','Browser title'],
+      ['Brand','global.metaDescription','Search description',true],['Brand','global.footerDescription','Footer description',true],
+      ['Hero','hero.imageUrl','Hero image URL'],
+      ['Hero','hero.eyebrow','Hero eyebrow'],['Hero','hero.titleLine1','Headline line 1'],
+      ['Hero','hero.titleLine2','Headline line 2'],['Hero','hero.titleAccent','Headline accent'],
+      ['Hero','hero.description','Hero description',true],['Factory','factory.imageUrl','Factory image URL'],
+      ['Factory','factory.eyebrow','Factory eyebrow'],['Factory','factory.title','Factory title'],
+      ['Factory','factory.description','Factory description',true],['Closing','closing.imageUrl','Closing image URL'],
+      ['Closing','closing.title','Closing title'],['Closing','closing.description','Closing description',true],
+      ['Pages','pages.products.title','Products page title'],['Pages','pages.products.intro','Products introduction',true],
+      ['Pages','pages.services.title','Services page title'],['Pages','pages.services.intro','Services introduction',true],
+      ['Pages','pages.portfolio.title','Portfolio page title'],['Pages','pages.portfolio.intro','Portfolio introduction',true],
+      ['Pages','pages.about.title','About page title'],['Pages','pages.about.intro','About introduction',true],
+      ['Pages','pages.contact.title','Contact page title'],['Pages','pages.contact.intro','Contact introduction',true],
+      ['Pages','pages.contact.sectionTitle','Contact section title'],['Pages','pages.contact.instructions','Contact instructions',true]
+    ];
+    function getPath(obj,path){return path.split('.').reduce((value,key)=>value?.[key],obj)??'';}
+    function setPath(obj,path,value){const keys=path.split('.');let cursor=obj;keys.slice(0,-1).forEach(key=>{if(!cursor[key])cursor[key]={};cursor=cursor[key];});cursor[keys[keys.length-1]]=value;}
+    function renderCmsFields(){
+      const groups={};cmsFields.forEach(field=>{(groups[field[0]]||=[]).push(field);});
+      $('cms-fields').innerHTML=Object.entries(groups).map(([section,fields])=>`<fieldset><legend>${section}</legend><div class="cms-grid">${fields.map(([,path,label,multiline])=>`<label><span>${label}</span>${multiline?`<textarea data-cms-path="${path}" rows="3">${escHtml(String(getPath(cmsContent,path)))}</textarea>`:`<input data-cms-path="${path}" value="${escHtml(String(getPath(cmsContent,path)))}">`}</label>`).join('')}</div></fieldset>`).join('');
+      $('cms-json').value=JSON.stringify(cmsContent,null,2);
+    }
+    $('cms-fields').addEventListener('input',event=>{const path=event.target.dataset.cmsPath;if(path){setPath(cmsContent,path,event.target.value);$('cms-json').value=JSON.stringify(cmsContent,null,2);}});
+    $('cms-json').addEventListener('input',()=>{$('cms-status').textContent='Advanced JSON changed. Save to validate and publish.';});
+    $('btn-save-content').addEventListener('click',async()=>{
+      const button=$('btn-save-content');button.disabled=true;$('cms-status').textContent='Saving…';
+      try{cmsContent=JSON.parse($('cms-json').value);const res=await fetch('/api/admin/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:cmsContent})});const data=await res.json();if(!res.ok)throw new Error(data.error||'Save failed');cmsContent=data.content;renderCmsFields();$('cms-status').textContent='Published successfully. Refresh the public site to see the changes.';}
+      catch(err){$('cms-status').textContent=`Not saved: ${err.message}`;}finally{button.disabled=false;}
+    });
 
     function switchAdminView(view) {
       $('kanban-view').hidden = view !== 'kanban';
@@ -710,6 +757,7 @@ Prepress Ticket: ${host}/admin/orders/${o.id}/ticket`;
       if (savedView === 'list') switchAdminView('list');
     } catch (_) {}
 
+    renderCmsFields();
     loadOrders();
   </script>
 </body>

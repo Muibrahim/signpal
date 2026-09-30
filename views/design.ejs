@@ -146,12 +146,12 @@
                 </div>
               </div>
 
-              <!-- 2. Fleet & Vehicle / Bajaaj Wrap Context -->
+              <!-- 2. Fleet & Vehicle Wrap Context -->
               <div id="cfg-vehicle" class="b2b-subconfig" hidden>
                 <div class="b2b-header-row">
                   <span class="b2b-icon">🚗</span>
                   <div>
-                    <strong id="b2b-vehicle-title">Fleet & Vehicle Wrap Specification</strong>
+                    <strong id="b2b-vehicle-title">Commercial Vehicle Wrap Specification</strong>
                     <small id="b2b-vehicle-desc">Outdoor high-durability cast vinyl with UV lamination</small>
                   </div>
                 </div>
@@ -159,19 +159,13 @@
                   <div class="b2b-opt-group">
                     <label id="lbl-vehicletype">Vehicle Model</label>
                     <div class="b2b-pills" id="pills-vehicletype">
-                      <button type="button" class="b2b-pill active" data-group="vehicletype" data-value="Bajaaj / TVS King Auto-Rickshaw">🛺 Bajaaj / Rickshaw</button>
-                      <button type="button" class="b2b-pill" data-group="vehicletype" data-value="Toyota Probox / Station Wagon">🚗 Commercial Car / Probox</button>
-                      <button type="button" class="b2b-pill" data-group="vehicletype" data-value="Delivery Van / HiAce">🚐 Delivery Van / Bus</button>
-                      <button type="button" class="b2b-pill" data-group="vehicletype" data-value="Pickup Truck / Land Cruiser">🛻 Pickup / 4x4 Fleet</button>
+                      <% content.design.vehicleTypes.forEach((vehicle,index) => { %><button type="button" class="b2b-pill <%= index === 0 ? 'active' : '' %>" data-group="vehicletype" data-value="<%= vehicle.value %>"><%= vehicle.icon %> <%= vehicle.label %></button><% }) %>
                     </div>
                   </div>
                   <div class="b2b-opt-group">
                     <label id="lbl-coverage">Wrap Coverage</label>
                     <div class="b2b-pills" id="pills-coverage">
-                      <button type="button" class="b2b-pill active" data-group="coverage" data-value="Full 360° Commercial Vinyl Wrap">🛡️ Full 360° Wrap</button>
-                      <button type="button" class="b2b-pill" data-group="coverage" data-value="Side Doors & Bonnet Branding">🚪 Side Doors + Hood</button>
-                      <button type="button" class="b2b-pill" data-group="coverage" data-value="Rear Window One-Way Vision">🪟 Perforated Rear Glass</button>
-                      <button type="button" class="b2b-pill" data-group="coverage" data-value="Die-Cut Brand Decal Kit">✂️ Die-Cut Decals</button>
+                      <% content.design.wrapCoverage.forEach((coverage,index) => { %><button type="button" class="b2b-pill <%= index === 0 ? 'active' : '' %>" data-group="coverage" data-value="<%= coverage.value %>"><%= coverage.icon %> <%= coverage.label %></button><% }) %>
                     </div>
                   </div>
                 </div>
@@ -276,7 +270,7 @@
             <button type="button" class="quick-fill-btn" data-fill="hambalcafe">Hambal Roastery (Café)</button>
             <button type="button" class="quick-fill-btn" data-fill="dhismahaconst">Hargeisa Heights (Property)</button>
             <button type="button" class="quick-fill-btn" data-fill="dahabshiilsign">Dahabshiil (3D Sign)</button>
-            <button type="button" class="quick-fill-btn" data-fill="bajaajdelivery">Bajaaj Express (Fleet Wrap)</button>
+            <button type="button" class="quick-fill-btn" data-fill="hiacebuswrap">HiAce Bus (Fleet Wrap)</button>
             <button type="button" class="quick-fill-btn" data-fill="horntelecom">Horn Telecom (Brand Suite)</button>
           </div>
 
@@ -751,7 +745,7 @@
 
       // Dynamic B2B Engineering & Fabrication Configurator visibility
       const isSignage = ['shop_sign', 'three_d_letters', 'illuminated_sign', 'neon_sign', 'acrylic_sign', 'pylon_sign', 'cladding_sign', 'directional_sign'].includes(pid);
-      const isVehicle = ['bajaaj_wrap', 'vehicle_wrap', 'vehicle_decal'].includes(pid);
+      const isVehicle = ['vehicle_wrap', 'vehicle_decal'].includes(pid);
       const isCorporate = pid === 'corporate_bundle';
 
       const b2bBox = $('b2b-configurator');
@@ -835,10 +829,10 @@
         desc: '3D Illuminated Channel Letter Signboard for Dahabshiil Branch. Tagline: Fast & Reliable Remittance and Banking Services. Backlit LED halo glow mounted on dark charcoal alucobond cladding. Phone: +252 63 500000. Downtown Square, Hargeisa.',
         qty: 1
       },
-      bajaajdelivery: {
-        product: 'bajaaj_wrap',
-        industry: 'Retail & Fashion',
-        desc: 'Full 360-degree commercial vinyl wrap for Bajaaj Express Delivery Fleet. Vibrant emerald green and gold branding with courier parcel graphics. Slogan: Gaadhsiin Degdeg Ah oo Hargeisa Oo Dhan ah. Customer Hotline: +252 63 4443322.',
+      hiacebuswrap: {
+        product: 'vehicle_wrap',
+        industry: 'Corporate & Tech',
+        desc: 'Full 360-degree commercial vinyl wrap for Dahab Express Inter-City Shuttle (HiAce Bus). High-contrast navy blue and gold livery with aerodynamic dynamic waves, official company crest, and destination routes: Hargeisa - Berbera - Burao. Customer Hotline: +252 63 4443322.',
         qty: 1
       },
       horntelecom: {
@@ -1024,7 +1018,7 @@
 
       // Contextual B2B Engineering & Fabrication Enrichment
       const isSignage = ['shop_sign', 'three_d_letters', 'illuminated_sign', 'neon_sign', 'acrylic_sign', 'pylon_sign', 'cladding_sign', 'directional_sign'].includes(productType);
-      const isVehicle = ['bajaaj_wrap', 'vehicle_wrap', 'vehicle_decal'].includes(productType);
+      const isVehicle = ['vehicle_wrap', 'vehicle_decal'].includes(productType);
       const isCorporate = productType === 'corporate_bundle';
 
       if (isSignage) {
@@ -1462,7 +1456,7 @@
         btnOrder: 'Ku Soco Dalabka Naqshaddan La Doortay →',
         b2bSignageTitle: 'Habaynta & Iftiinka Boorarka 3D-ga',
         b2bSignageDesc: 'Xulashada farsamada xarafyada 3D, sanduuqyada ifaya & tiirarka',
-        b2bVehicleTitle: 'Daabacaadda & Duubista Gaadiidka / Bajaajta',
+        b2bVehicleTitle: 'Daabacaadda & Duubista Gaadiidka Ganacsiga',
         b2bVehicleDesc: 'Maaddada adag ee vinyl-ka ah oo u adkaysata qorraxda iyo boodhka',
         b2bCorporateTitle: 'Xirmo Dhamaystiran oo Shirkadeed',
         b2bCorporateDesc: '4 agab oo isku midab & naqshad ah oo diyaar u ah daabacaad rasmi ah',

@@ -1,15 +1,10 @@
 <nav class="nav">
   <div class="nav-inner">
-    <a href="/" class="nav-logo"><img src="/images/signpal-logo-640.png" alt="SignPal — Print Precision" class="nav-logo-image"></a>
+    <a href="/" class="nav-logo"><img src="<%= content.global.logoUrl %>" alt="<%= content.global.siteName %>" class="nav-logo-image"></a>
     <button class="nav-toggle" type="button" aria-label="Open navigation" onclick="this.parentElement.classList.toggle('nav-open')">Menu</button>
     <div class="nav-links">
-      <a href="/" class="nav-link <%= typeof slug !== 'undefined' && slug === 'home' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'home' ? 'aria-current="page"' : '' %>>Home</a>
-      <a href="/products" class="nav-link <%= typeof slug !== 'undefined' && slug === 'products' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'products' ? 'aria-current="page"' : '' %>>Products</a>
-      <a href="/services" class="nav-link <%= typeof slug !== 'undefined' && slug === 'services' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'services' ? 'aria-current="page"' : '' %>>Services</a>
-      <a href="/portfolio" class="nav-link <%= typeof slug !== 'undefined' && slug === 'portfolio' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'portfolio' ? 'aria-current="page"' : '' %>>Our work</a>
-      <a href="/about" class="nav-link <%= typeof slug !== 'undefined' && slug === 'about' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'about' ? 'aria-current="page"' : '' %>>About</a>
-      <a href="/contact" class="nav-link <%= typeof slug !== 'undefined' && slug === 'contact' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'contact' ? 'aria-current="page"' : '' %>>Contact</a>
-      <a href="/design" class="nav-link nav-link-primary <%= typeof slug !== 'undefined' && slug === 'design' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'design' ? 'aria-current="page"' : '' %>>Start an order</a>
+      <% content.navigation.forEach((item) => { %><a href="<%= item.href %>" class="nav-link <%= typeof slug !== 'undefined' && slug === item.slug ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === item.slug ? 'aria-current="page"' : '' %>><%= item.label %></a><% }) %>
+      <a href="/design" class="nav-link nav-link-primary <%= typeof slug !== 'undefined' && slug === 'design' ? 'active' : '' %>" <%= typeof slug !== 'undefined' && slug === 'design' ? 'aria-current="page"' : '' %>><%= content.labels.startOrder %></a>
     </div>
   </div>
 </nav>

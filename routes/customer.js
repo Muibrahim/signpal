@@ -9,17 +9,24 @@ const router = express.Router();
 const { generateDesigns, generateFlatDesign, upscaleImage } = require('../services/ai');
 const orders = require('../db/orders');
 const { buildThemeCSS } = require('../lib/landing-context');
-const { CATEGORIES, PRODUCTS, getProduct } = require('../lib/product-catalog');
+const { getProduct } = require('../lib/product-catalog');
 const payments = require('../services/payments');
 const { estimatePrice } = require('../lib/pricing');
+const siteContent = require('../db/site-content');
+
+router.use(async (_req, res, next) => {
+  try { res.locals.content = await siteContent.getSiteContent(); next(); }
+  catch (err) { next(err); }
+});
 
 // Design tool page
 router.get('/design', (_req, res) => {
-  res.render('design', { slug: 'design', themeCSS: buildThemeCSS(), productCategories: CATEGORIES, products: PRODUCTS });
+  const content = res.locals.content;
+  res.render('design', { slug: 'design', themeCSS: buildThemeCSS(), productCategories: content.catalog.categories, products: content.catalog.products });
 });
 
 router.get('/api/products', (_req, res) => {
-  res.json({ categories: CATEGORIES, products: PRODUCTS });
+  res.json({ categories: res.locals.content.catalog.categories, products: res.locals.content.catalog.products });
 });
 
 router.get('/api/pricing/estimate', (req, res) => {
