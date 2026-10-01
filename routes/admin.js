@@ -77,7 +77,7 @@ router.put('/api/admin/content', async (req, res) => {
     ['navigation', value.navigation],
     ['showcase.items', value.showcase?.items],
     ['pathways.items', value.pathways?.items],
-    ['process.items', value.process?.items],
+    ['process.steps', value.process?.steps],
     ['portfolio.items', value.portfolio?.items],
     ['pricing.items', value.pricing?.items],
     ['catalog.categories', value.catalog?.categories],
